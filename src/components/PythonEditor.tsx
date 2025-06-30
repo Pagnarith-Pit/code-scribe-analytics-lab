@@ -1,9 +1,13 @@
 
 import { useEffect, useRef, useState } from 'react';
-import { EditorView, basicSetup } from '@codemirror/basic-setup';
+import { EditorView, keymap, highlightActiveLine, lineNumbers, highlightActiveLineGutter } from '@codemirror/view';
+import { EditorState } from '@codemirror/state';
+import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
+import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
+import { foldGutter, indentOnInput, bracketMatching, foldKeymap } from '@codemirror/language';
 import { python } from '@codemirror/lang-python';
 import { oneDark } from '@codemirror/theme-one-dark';
-import { EditorState } from '@codemirror/state';
 
 interface PythonEditorProps {
   initialCode: string;
@@ -21,7 +25,24 @@ export const PythonEditor = ({ initialCode, onChange, onRun }: PythonEditorProps
       const startState = EditorState.create({
         doc: initialCode,
         extensions: [
-          basicSetup,
+          lineNumbers(),
+          highlightActiveLineGutter(),
+          highlightActiveLine(),
+          foldGutter(),
+          indentOnInput(),
+          bracketMatching(),
+          closeBrackets(),
+          autocompletion(),
+          highlightSelectionMatches(),
+          history(),
+          keymap.of([
+            ...closeBracketsKeymap,
+            ...defaultKeymap,
+            ...searchKeymap,
+            ...historyKeymap,
+            ...foldKeymap,
+            ...completionKeymap,
+          ]),
           python(),
           oneDark,
           EditorView.updateListener.of((update) => {
