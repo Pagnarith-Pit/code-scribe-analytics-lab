@@ -134,21 +134,21 @@ const Landing = () => {
           <h2 className="text-3xl font-bold text-gray-900 mb-4">Built for Research</h2>
           <p className="text-xl text-gray-600 mb-8">
             This platform is specifically designed for PhD research in computer science education,
-            providing detailed analytics and insights to understand how students learn to code.
+            providing detailed analytics and insights to understand the effect of AI on student's performance.
           </p>
           <div className="grid md:grid-cols-2 gap-8 mt-12">
             <div className="text-left">
               <Lightbulb className="h-8 w-8 text-yellow-500 mb-3" />
               <h3 className="text-xl font-semibold mb-2">Learning Analytics</h3>
               <p className="text-gray-600">
-                Comprehensive data collection on coding behavior, hint usage, and problem-solving patterns.
+                Comprehensive data collection on coding behavior, hint usage, and problem-solving patterns. Remember, none of this data will be shared, so participation will have no effect on your grades.
               </p>
             </div>
             <div className="text-left">
               <BarChart3 className="h-8 w-8 text-green-500 mb-3" />
               <h3 className="text-xl font-semibold mb-2">Research Insights</h3>
               <p className="text-gray-600">
-                Detailed metrics designed to support educational research and improve learning outcomes.
+                Detailed metrics designed to support educational research and improve learning outcomes. This study will help inform how educational technological developer should design their products to better support students.
               </p>
             </div>
           </div>
