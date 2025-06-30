@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Code, Brain, BarChart3, Lightbulb, Play, Users } from "lucide-react";
+import { Code, Brain, BarChart3, Lightbulb, Play, Users, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Landing = () => {
@@ -31,19 +31,15 @@ const Landing = () => {
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            Learn Python with
+            Study <span className="text-orange-500">COMP90059</span> with
             <span className="text-blue-600"> AI-Powered Analytics</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Master Python programming through interactive coding exercises with intelligent feedback,
-            real-time analytics, and personalized learning insights designed for PhD research.
+            Work on your weekly tutorial questions and get AI-powered hints to help you get unstuck. Take part in this exciting research project today!
           </p>
           <div className="flex items-center justify-center gap-4">
             <Button size="lg" asChild>
               <Link to="/signup">Start Learning</Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link to="/ide">Try IDE</Link>
             </Button>
           </div>
         </div>
@@ -53,9 +49,9 @@ const Landing = () => {
       <section className="py-16 px-4 bg-white">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose Binary Playground?</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">What is Binary Playground?</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Our platform combines cutting-edge AI with proven learning methodologies to accelerate your Python journey.
+              Our platform is part of a PhD research project in computer science eduation, designed to help students learn Python programming through interactive coding exercises and AI-powered hints.
             </p>
           </div>
 
@@ -63,21 +59,10 @@ const Landing = () => {
             <Card>
               <CardHeader>
                 <Brain className="h-12 w-12 text-blue-600 mb-4" />
-                <CardTitle>AI-Powered Hints</CardTitle>
+                <CardTitle>AI Assistant</CardTitle>
                 <CardDescription>
                   Get intelligent, contextual hints when you're stuck, with three levels of assistance
-                  to guide you without giving away the solution.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <BarChart3 className="h-12 w-12 text-green-600 mb-4" />
-                <CardTitle>Real-Time Analytics</CardTitle>
-                <CardDescription>
-                  Track your learning progress with detailed analytics including coding patterns,
-                  time spent, and improvement metrics designed for research insights.
+                  to guide you.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -88,7 +73,17 @@ const Landing = () => {
                 <CardTitle>Interactive IDE</CardTitle>
                 <CardDescription>
                   Write and execute Python code instantly in our browser-based IDE with syntax
-                  highlighting, auto-completion, and immediate feedback.
+                  highlighting and error checking. 
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <ShieldCheck className="h-12 w-12 text-green-600 mb-4" />
+                <CardTitle>Complete Privacy</CardTitle>
+                <CardDescription>
+                  Your data is completely private. We do not share your code or pattern of usage, so you can use the platform with confidence. 
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -101,7 +96,7 @@ const Landing = () => {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">How It Works</h2>
-            <p className="text-gray-600">Simple steps to start your Python learning journey</p>
+            <p className="text-gray-600">A simple approach to improve your COMP90059 experience</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -109,24 +104,24 @@ const Landing = () => {
               <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 1
               </div>
-              <h3 className="text-xl font-semibold mb-2">Choose Exercise</h3>
-              <p className="text-gray-600">Select from curated Python coding challenges designed to build your skills progressively.</p>
+              <h3 className="text-xl font-semibold mb-2">Integrated Tutorial Exercises</h3>
+              <p className="text-gray-600">Your weekly tutorial questions all in one place with an interactive IDE as your playground.</p>
             </div>
 
             <div className="text-center">
               <div className="w-16 h-16 bg-green-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 2
               </div>
-              <h3 className="text-xl font-semibold mb-2">Code & Learn</h3>
-              <p className="text-gray-600">Write code in our IDE, get hints when needed, and receive instant feedback on your solutions.</p>
+              <h3 className="text-xl font-semibold mb-2">Ask Whenever You Want</h3>
+              <p className="text-gray-600">As you explore the concepts, you can ask our AI bots to help provide hints for you to solve these problems or get a better understanding related topics.</p>
             </div>
 
             <div className="text-center">
               <div className="w-16 h-16 bg-purple-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 3
               </div>
-              <h3 className="text-xl font-semibold mb-2">Track Progress</h3>
-              <p className="text-gray-600">Monitor your learning analytics and see detailed insights about your coding journey.</p>
+              <h3 className="text-xl font-semibold mb-2">Hint Progression</h3>
+              <p className="text-gray-600">Our hints start from simple tips that push you along to detailed explanations for when you need it most.</p>
             </div>
           </div>
         </div>
@@ -165,7 +160,7 @@ const Landing = () => {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold mb-6">Ready to Start Learning?</h2>
           <p className="text-xl mb-8 text-blue-100">
-            Join our research platform and accelerate your Python programming skills with AI-powered assistance.
+            Join our research platform by creating an account. If you want to try out the features, click "Try Demo" below.
           </p>
           <div className="flex items-center justify-center gap-4">
             <Button size="lg" variant="secondary" asChild>
@@ -189,7 +184,7 @@ const Landing = () => {
             AI-powered Python learning platform for educational research
           </p>
           <p className="text-sm text-gray-500">
-            Built with React, TypeScript, and powered by Pyodide
+            A University of Melbourne PhD research project
           </p>
         </div>
       </footer>
