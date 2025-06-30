@@ -22,10 +22,13 @@ const SignIn = () => {
     // Simulate authentication - replace with real authentication logic
     try {
       // For demo purposes, accept any email/password combination
+      // Change this to your actual authentication logic
+
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Redirect to IDE after successful login
       navigate("/ide");
+      
     } catch (err) {
       setError("Invalid email or password. Please try again.");
     } finally {
@@ -35,24 +38,25 @@ const SignIn = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+
+      <div className="absolute top-0 left-0 p-6">
+        <Link to="/" className="inline-flex items-center gap-2">
+          <Code className="h-8 w-8 text-blue-600" />
+          <span className="text-2xl font-bold text-gray-900">Binary Playground</span>
+        </Link>
+      </div>
+
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-4">
-            <Code className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-gray-900">Binary Playground</span>
-          </Link>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-          <p className="text-gray-600">Sign in to continue your Python learning journey</p>
+          <p className="text-gray-600">Sign into your learning portal</p>
         </div>
 
         {/* Sign In Form */}
         <Card className="shadow-lg">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Sign In</CardTitle>
-            <CardDescription className="text-center">
-              Enter your credentials to access your account
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -129,7 +133,7 @@ const SignIn = () => {
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
 
-              {/* Demo Access */}
+              {/* Demo Access
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-300" />
@@ -146,7 +150,7 @@ const SignIn = () => {
                 onClick={() => navigate("/ide")}
               >
                 Try Demo (No Account Required)
-              </Button>
+              </Button> */}
             </form>
 
             {/* Sign Up Link */}
@@ -163,20 +167,17 @@ const SignIn = () => {
             </div>
 
             {/* Research Notice */}
-            <div className="mt-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            {/* <div className="mt-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-xs text-blue-800 text-center">
-                <strong>Research Project:</strong> By signing in, you agree to participate in our 
+                <strong>Reminder:</strong> By signing up, you agree to participate in our 
                 educational research study. Your data will remain completely private and anonymous.
               </p>
-            </div>
+            </div> */}
           </CardContent>
         </Card>
 
         {/* Footer */}
         <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500">
-            University of Melbourne PhD Research Project
-          </p>
           <Link to="/" className="text-sm text-blue-600 hover:text-blue-700 hover:underline">
             ← Back to Home
           </Link>
