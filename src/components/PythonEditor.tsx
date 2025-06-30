@@ -22,6 +22,23 @@ export const PythonEditor = ({ initialCode, onChange, onRun }: PythonEditorProps
 
   useEffect(() => {
     if (editorRef.current && !viewRef.current) {
+      const runCodeKeymap = keymap.of([
+        {
+          key: 'Ctrl-Enter',
+          run: () => {
+            onRun(currentCode);
+            return true;
+          }
+        },
+        {
+          key: 'Cmd-Enter',
+          run: () => {
+            onRun(currentCode);
+            return true;
+          }
+        }
+      ]);
+
       const startState = EditorState.create({
         doc: initialCode,
         extensions: [
@@ -43,6 +60,7 @@ export const PythonEditor = ({ initialCode, onChange, onRun }: PythonEditorProps
             ...foldKeymap,
             ...completionKeymap,
           ]),
+          runCodeKeymap,
           python(),
           oneDark,
           EditorView.updateListener.of((update) => {
@@ -95,13 +113,6 @@ export const PythonEditor = ({ initialCode, onChange, onRun }: PythonEditorProps
     onRun(currentCode);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      e.preventDefault();
-      handleRunCode();
-    }
-  };
-
   return (
     <div className="h-full flex flex-col bg-gray-900 rounded-lg overflow-hidden">
       <div className="flex items-center justify-between p-3 bg-gray-800 border-b border-gray-700">
@@ -121,7 +132,6 @@ export const PythonEditor = ({ initialCode, onChange, onRun }: PythonEditorProps
       <div 
         ref={editorRef} 
         className="flex-1 overflow-hidden"
-        onKeyDown={handleKeyDown}
       />
     </div>
   );
