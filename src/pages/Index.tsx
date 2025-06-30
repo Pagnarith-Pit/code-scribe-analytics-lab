@@ -1,12 +1,161 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { useState, useEffect } from 'react';
+import { PythonEditor } from '@/components/PythonEditor';
+import { OutputPanel } from '@/components/OutputPanel';
+import { ExercisePanel } from '@/components/ExercisePanel';
+import { AnalyticsPanel } from '@/components/AnalyticsPanel';
+import { HintModal } from '@/components/HintModal';
+import { useAnalytics } from '@/hooks/useAnalytics';
+import { usePyodide } from '@/hooks/usePyodide';
+import { hints } from '@/data/hints';
 
 const Index = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+  const [currentCode, setCurrentCode] = useState(`# Write your count_words function here
+def count_words(text):
+    # Your code here
+    pass
+
+# Test your function
+if __name__ == "__main__":
+    test_text = "Hello world! Hello Python world."
+    result = count_words(test_text)
+    print(f"Result: {result}")
+`);
+  
+  const [output, setOutput] = useState('');
+  const [executionTime, setExecutionTime] = useState<number>();
+  const [showHintModal, setShowHintModal] = useState(false);
+  const [currentHint, setCurrentHint] = useState<{ level: 1 | 2 | 3; content: string; timestamp: number } | null>(null);
+  
+  const { runPython, isLoading, isRunning } = usePyodide();
+  const { 
+    analytics, 
+    startTracking, 
+    logCodeChange, 
+    logHintInteraction, 
+    logCodeExecution,
+    updateHintViewingDuration 
+  } = useAnalytics();
+
+  useEffect(() => {
+    startTracking();
+  }, [startTracking]);
+
+  const handleCodeChange = (code: string, changeType: 'typing' | 'paste' | 'delete') => {
+    setCurrentCode(code);
+    logCodeChange(code, changeType);
+  };
+
+  const handleRunCode = async (code: string) => {
+    if (isLoading) {
+      setOutput('Python runtime is still loading...');
+      return;
+    }
+
+    const result = await runPython(code);
+    setOutput(result.output);
+    setExecutionTime(result.executionTime);
+    logCodeExecution(code, result.output, result.executionTime, result.success);
+  };
+
+  const handleHintRequest = (level: 1 | 2 | 3) => {
+    const hintContent = hints[level];
+    const interaction = logHintInteraction(level, hintContent);
+    setCurrentHint({ level, content: hintContent, timestamp: interaction.timestamp });
+    setShowHintModal(true);
+  };
+
+  const handleCloseHint = () => {
+    setShowHintModal(false);
+  };
+
+  const handleHintViewed = (viewingDuration: number) => {
+    if (currentHint) {
+      updateHintViewingDuration(currentHint.timestamp, viewingDuration);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Loading Python IDE</h2>
+          <p className="text-gray-600">Initializing Python runtime...</p>
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Python Learning IDE</h1>
+              <p className="text-gray-600">Complete coding exercises with intelligent analytics</p>
+            </div>
+            <div className="flex items-center gap-4 text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Python Runtime Ready</span>
+              </div>
+              <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
+                Session: {Math.floor(analytics.totalSessionTime / 1000)}s
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto p-4">
+        <div className="grid grid-cols-12 gap-6 h-[calc(100vh-140px)]">
+          {/* Left Panel - Exercise */}
+          <div className="col-span-3">
+            <ExercisePanel 
+              onHintRequest={handleHintRequest}
+              hintsUsed={analytics.hintsUsed}
+            />
+          </div>
+
+          {/* Center Panel - Editor and Output */}
+          <div className="col-span-6 flex flex-col gap-4">
+            <div className="flex-1">
+              <PythonEditor
+                initialCode={currentCode}
+                onChange={handleCodeChange}
+                onRun={handleRunCode}
+              />
+            </div>
+            <div className="h-64">
+              <OutputPanel
+                output={output}
+                isRunning={isRunning}
+                executionTime={executionTime}
+              />
+            </div>
+          </div>
+
+          {/* Right Panel - Analytics */}
+          <div className="col-span-3">
+            <AnalyticsPanel analytics={analytics} />
+          </div>
+        </div>
+      </div>
+
+      {/* Hint Modal */}
+      {currentHint && (
+        <HintModal
+          isOpen={showHintModal}
+          onClose={handleCloseHint}
+          hintLevel={currentHint.level}
+          hintContent={currentHint.content}
+          onHintViewed={handleHintViewed}
+        />
+      )}
     </div>
   );
 };
