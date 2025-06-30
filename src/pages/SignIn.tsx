@@ -27,7 +27,7 @@ const SignIn = () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Redirect to IDE after successful login
-      navigate("/ide");
+      navigate("/module");
       
     } catch (err) {
       setError("Invalid email or password. Please try again.");

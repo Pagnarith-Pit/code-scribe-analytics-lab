@@ -58,7 +58,7 @@ const SignUp = () => {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Redirect to IDE after successful registration
-      navigate("/ide");
+      navigate("/module");
     } catch (err) {
       setError("Failed to create account. Please try again.");
     } finally {
