@@ -23,7 +23,7 @@ import {
 } from 'ui'
 import { DialogHeader } from 'ui/src/components/shadcn/ui/dialog'
 import { z } from 'zod'
-import { Admonition } from './../admonition'
+import { Admonition } from '../admonition'
 
 export interface TextConfirmModalProps {
   loading: boolean
