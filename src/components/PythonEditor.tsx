@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from 'react';
 import { EditorView, keymap, highlightActiveLine, lineNumbers, highlightActiveLineGutter } from '@codemirror/view';
 import { EditorState } from '@codemirror/state';
@@ -19,6 +18,14 @@ export const PythonEditor = ({ initialCode, onChange, onRun }: PythonEditorProps
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView>();
   const [currentCode, setCurrentCode] = useState(initialCode);
+  const onRunRef = useRef(onRun);
+  const onChangeRef = useRef(onChange);
+
+  // Keep refs updated
+  useEffect(() => {
+    onRunRef.current = onRun;
+    onChangeRef.current = onChange;
+  }, [onRun, onChange]);
 
   useEffect(() => {
     if (editorRef.current && !viewRef.current) {
@@ -26,14 +33,14 @@ export const PythonEditor = ({ initialCode, onChange, onRun }: PythonEditorProps
         {
           key: 'Ctrl-Enter',
           run: () => {
-            onRun(currentCode);
+            onRunRef.current(currentCode);
             return true;
           }
         },
         {
           key: 'Cmd-Enter',
           run: () => {
-            onRun(currentCode);
+            onRunRef.current(currentCode);
             return true;
           }
         }
@@ -76,7 +83,7 @@ export const PythonEditor = ({ initialCode, onChange, onRun }: PythonEditorProps
                 changeType = 'delete';
               }
               
-              onChange(newCode, changeType);
+              onChangeRef.current(newCode, changeType);
             }
           }),
           EditorView.theme({
@@ -107,7 +114,7 @@ export const PythonEditor = ({ initialCode, onChange, onRun }: PythonEditorProps
         viewRef.current = undefined;
       }
     };
-  }, [initialCode]);
+  }, []); // Empty dependency array to prevent recreation
 
   const handleRunCode = () => {
     onRun(currentCode);
