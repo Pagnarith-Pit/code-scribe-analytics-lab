@@ -98,7 +98,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(false)
   }
 
-  const value = {
+  const value: AuthContextType = {
     user,
     session,
     loading,
@@ -108,7 +108,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={value as AuthContextType}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )
