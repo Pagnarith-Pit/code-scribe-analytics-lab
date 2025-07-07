@@ -1,10 +1,11 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import 'dotenv/config';
+// import 'dotenv/config';
+const key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzUxODEwNDAwLCJleHAiOjE5MDk1NzY4MDB9.5_QrIVr2iwcM9a5zhKd8oFxczzkwOi2B4QuF1Ku2s8k";
+const url = "http://localhost:8000"
 
 // Get environment variables - make sure these are set in your .env file
-const supabaseUrl = process.env.SUPABASE_PUBLIC_URL
-const supabaseKey = process.env.ANON_KEY
-
+const supabaseUrl = url  //process.env.SUPABASE_PUBLIC_URL
+const supabaseKey = key  //process.env.ANON_KEY
 if (!supabaseUrl || !supabaseKey) {
   throw new Error('Missing Supabase environment variables')
 }

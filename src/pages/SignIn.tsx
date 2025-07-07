@@ -5,6 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Code, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { set } from "date-fns";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
@@ -13,26 +15,38 @@ const SignIn = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { signIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
-    // Simulate authentication - replace with real authentication logic
     try {
-      // For demo purposes, accept any email/password combination
-      // Change this to your actual authentication logic
-
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { error: signInError } = await signIn(email, password);
       
-      // Redirect to IDE after successful login
+      if (signInError) {
+        // Handle specific Supabase errors
+        setIsLoading(false);
+        if (signInError.message.includes('Invalid login credentials')) {
+          setError("Invalid email or password. Please check your credentials and try again.");
+        } else if (signInError.message.includes('Email not confirmed')) {
+          setError("Please check your email and confirm your account before signing in.");
+        } else if (signInError.message.includes('Too many requests')) {
+          setError("Too many login attempts. Please wait a moment before trying again.");
+        } else {
+          setError(signInError.message || "Failed to sign in. Please try again.");
+        }
+        return;
+      }
+
+      // Successful sign in - navigate to module page
       navigate("/module");
       
-    } catch (err) {
-      setError("Invalid email or password. Please try again.");
-    } finally {
+    } catch (err: any) {
       setIsLoading(false);
+      setError("An unexpected error occurred. Please try again.");
+      console.error("Sign in error:", err);
     }
   };
 

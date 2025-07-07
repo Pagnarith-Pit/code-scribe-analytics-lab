@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Code, Eye, EyeOff, AlertCircle, Check } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -23,6 +24,9 @@ const SignUp = () => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToResearch, setAgreedToResearch] = useState(false);
   const navigate = useNavigate();
+
+  //Authorization context
+  const { signUp } = useAuth();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -49,20 +53,41 @@ const SignUp = () => {
     const validationError = validateForm();
     if (validationError) {
       setError(validationError);
-      setIsLoading(false);
       return;
     }
 
-    // Simulate account creation - replace with real registration logic
+    // Prepare user metadata
+    const userData = {
+      first_name: formData.firstName,
+      last_name: formData.lastName,
+      student_id: formData.studentId,
+      year_level: formData.yearLevel,
+      agreed_to_research: agreedToResearch,
+      agreed_to_terms: agreedToTerms,
+    };
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const { error: signUpError } = await signUp(formData.email, formData.password, userData);
       
-      // Redirect to IDE after successful registration
+      if (signUpError) {
+        setIsLoading(false);
+        // Handle specific Supabase errors
+        if (signUpError.message.includes('User already registered')) {
+          setError("An account with this email already exists. Please sign in instead.");
+        } else if (signUpError.message.includes('Password should be')) {
+          setError("Password should be at least 6 characters long.");
+        } else {
+          setError(signUpError.message || "Failed to create account. Please try again.");
+        }
+        return;
+      }
+      // Check if email confirmation is required
       navigate("/module");
-    } catch (err) {
-      setError("Failed to create account. Please try again.");
-    } finally {
+      
+    } catch (err: any) {
       setIsLoading(false);
+      setError("An unexpected error occurred. Please try again.");
+      console.error("Sign up error:", err);
     }
   };
 
