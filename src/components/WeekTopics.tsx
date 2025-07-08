@@ -11,7 +11,7 @@ const topics = [
 export const WeekTopics: React.FC = () => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Module Topics</h2>
+      <h2 className="text-xl font-bold text-gray-800 mb-4">Welcome to Week x !</h2>
       <ul className="space-y-2">
         {topics.map((topic, index) => (
           <li key={index} className="text-gray-700 hover:text-blue-600 cursor-pointer">
