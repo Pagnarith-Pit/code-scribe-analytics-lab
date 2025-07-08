@@ -214,7 +214,7 @@ const Module = () => {
 
                 <Button 
                   className="w-full mt-3" 
-                  onClick={() => navigate(`/ide/${module.week}`)}
+                  onClick={() => navigate(`/problem/${module.week}`)}
                 >
                   Start Week {module.week}
                 </Button>

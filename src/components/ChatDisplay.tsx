@@ -4,6 +4,39 @@ interface ChatInputProps {
   onSendMessage: (message: string) => void;
 }
 
+const AnimatedSparkles = () => (
+  <div className="relative inline-block">
+    <div className="relative w-6 h-6">
+      {/* Large center star with animation */}
+      <div className="absolute inset-0 animate-pulse">
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          <defs>
+            <linearGradient id="animatedGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#e879f9" />
+              <stop offset="50%" stopColor="#8b5cf6" />
+              <stop offset="100%" stopColor="#06b6d4" />
+            </linearGradient>
+          </defs>
+          <path 
+            d="M50 5 L65 35 L95 50 L65 65 L50 95 L35 65 L5 50 L35 35 Z" 
+            fill="url(#animatedGradient)"
+            className="drop-shadow-lg"
+          />
+        </svg>
+      </div>
+      
+      {/* Small stars with different animation delays */}
+      {/* <div className="absolute -top-2 -left-2 w-4 h-4 animate-ping [animation-delay:-1s]">
+        <div className="w-3 h-3 bg-gradient-to-br from-pink-500 to-purple-500 transform rotate-45 rounded-sm"></div>
+      </div> */}
+
+      <div className="absolute -bottom-1 -left-1 w-3 h-3 animate-pulse [animation-delay:-0.5s]">
+        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 transform rotate-45 rounded-sm"></div>
+      </div>
+    </div>
+  </div>
+);
+
 export const ChatDisplay: React.FC<ChatInputProps> = ({ onSendMessage }) => {
   const [input, setInput] = useState('');
 
@@ -17,7 +50,10 @@ export const ChatDisplay: React.FC<ChatInputProps> = ({ onSendMessage }) => {
 
   return (
     <div className="flex flex-col">
-      <h2 className="text-l font-bold text-gray-800 mb-2 text-center">AI-Powered Chatbox</h2>
+      <h2 className="text-l font-bold text-gray-800 mb-2 text-center">
+        <AnimatedSparkles/>
+        AI-Powered Chatbox
+      </h2>
       <form onSubmit={handleSubmit} className="relative flex items-center">
         <input
           type="text"

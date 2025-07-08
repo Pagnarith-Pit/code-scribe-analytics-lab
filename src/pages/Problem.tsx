@@ -5,8 +5,10 @@ import { usePyodide } from '@/hooks/usePyodide';
 import { WeekTopics } from '@/components/WeekTopics';
 import { ChatDisplay } from '@/components/ChatDisplay';
 import { Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
-const Index = () => {
+const Problem = () => {
+  const {weekNumber} = useParams();
   const [currentCode, setCurrentCode] = useState(`# Write your Python code here
 # For example:
 def greet(name):
@@ -113,7 +115,7 @@ print(greet("World"))
           style={{ width: `${leftPanelWidth}%` }}
         >
           <div className="h-1/4 min-h-[200px]">
-            <WeekTopics />
+            <WeekTopics weekNumber={weekNumber}/>
           </div>
           <div className="flex-1 min-h-0">
             <ChatDisplay messages={aiMessages} />
@@ -162,4 +164,4 @@ print(greet("World"))
   );
 };
 
-export default Index;
+export default Problem;
