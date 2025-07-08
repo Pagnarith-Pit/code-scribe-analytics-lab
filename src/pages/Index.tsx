@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react';
 import { PythonEditor } from '@/components/PythonEditor';
 import { OutputPanel } from '@/components/OutputPanel';
-import { ExercisePanel } from '@/components/ExercisePanel';
-import { AnalyticsPanel } from '@/components/AnalyticsPanel';
+import { WeekTopics } from '@/components/WeekTopics';
+import { AIResponsePanel } from '@/components/AIResponsePanel';
 import { HintModal } from '@/components/HintModal';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { usePyodide } from '@/hooks/usePyodide';
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="w-full px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Python Learning IDE</h1>
@@ -111,37 +111,40 @@ if __name__ == "__main__":
       </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-4">
-        <div className="grid grid-cols-12 gap-6 h-[calc(100vh-140px)]">
-          {/* Left Panel - Exercise */}
-          <div className="col-span-3">
-            <ExercisePanel 
-              onHintRequest={handleHintRequest}
-              hintsUsed={analytics.hintsUsed}
-            />
+      <div className="w-full p-4">
+        <div className="flex gap-4 h-[calc(100vh-140px)]">
+          {/* Left Panel - 80% */}
+          <div className="flex-1 w-4/5 flex flex-col gap-4">
+            {/* Top Left - Week Topics */}
+            <div className="h-1/2">
+              <WeekTopics className="h-full" />
+            </div>
+            
+            {/* Bottom Left - AI Response Panel */}
+            <div className="h-1/2">
+              <AIResponsePanel className="h-full" />
+            </div>
           </div>
 
-          {/* Center Panel - Editor and Output */}
-          <div className="col-span-6 flex flex-col gap-4">
-            <div className="flex-1">
+          {/* Right Panel - 20% */}
+          <div className="w-1/5 flex flex-col gap-4">
+            {/* Top Right - Python Editor */}
+            <div className="h-2/3">
               <PythonEditor
                 initialCode={currentCode}
                 onChange={handleCodeChange}
                 onRun={handleRunCode}
               />
             </div>
-            <div className="h-64">
+            
+            {/* Bottom Right - Terminal Output */}
+            <div className="h-1/3">
               <OutputPanel
                 output={output}
                 isRunning={isRunning}
                 executionTime={executionTime}
               />
             </div>
-          </div>
-
-          {/* Right Panel - Analytics */}
-          <div className="col-span-3">
-            <AnalyticsPanel analytics={analytics} />
           </div>
         </div>
       </div>
