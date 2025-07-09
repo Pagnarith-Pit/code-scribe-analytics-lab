@@ -89,33 +89,33 @@ const Module = () => {
       estimatedTime: "25 min",
       status: "available"
     },
-    {
-      week: 10,
-      title: "Libraries and Modules",
-      description: "Using external libraries and creating modules",
-      topics: ["Import Statements", "Popular Libraries", "Module Creation"],
-      difficulty: "Advanced",
-      estimatedTime: "30 min",
-      status: "available"
-    },
-    {
-      week: 11,
-      title: "Data Analysis with Pandas",
-      description: "Introduction to data manipulation with Pandas",
-      topics: ["DataFrames", "Data Cleaning", "Basic Analysis"],
-      difficulty: "Advanced",
-      estimatedTime: "30 min",
-      status: "available"
-    },
-    {
-      week: 12,
-      title: "Final Project",
-      description: "Comprehensive project combining all concepts",
-      topics: ["Project Planning", "Implementation", "Code Review"],
-      difficulty: "Advanced",
-      estimatedTime: "30 min",
-      status: "available"
-    }
+    // {
+    //   week: 10,
+    //   title: "Libraries and Modules",
+    //   description: "Using external libraries and creating modules",
+    //   topics: ["Import Statements", "Popular Libraries", "Module Creation"],
+    //   difficulty: "Advanced",
+    //   estimatedTime: "30 min",
+    //   status: "available"
+    // },
+    // {
+    //   week: 11,
+    //   title: "Data Analysis with Pandas",
+    //   description: "Introduction to data manipulation with Pandas",
+    //   topics: ["DataFrames", "Data Cleaning", "Basic Analysis"],
+    //   difficulty: "Advanced",
+    //   estimatedTime: "30 min",
+    //   status: "available"
+    // },
+    // {
+    //   week: 12,
+    //   title: "Final Project",
+    //   description: "Comprehensive project combining all concepts",
+    //   topics: ["Project Planning", "Implementation", "Code Review"],
+    //   difficulty: "Advanced",
+    //   estimatedTime: "30 min",
+    //   status: "available"
+    // }
   ];
 
   const getDifficultyColor = (difficulty: string) => {
