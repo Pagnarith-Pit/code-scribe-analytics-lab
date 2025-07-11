@@ -29,7 +29,7 @@ print(greet("World"))
   const { runPython, isLoading: pyodideLoading, isRunning } = usePyodide();
   const { 
     loading: problemFlowLoading, 
-    messages, 
+    chatHistory, 
     problemState, 
     handleUserResponse 
   } = useProblemFlow(weekNumber || '1');
@@ -117,7 +117,7 @@ print(greet("World"))
 
             <WeekTopics 
               weekNumber={weekNumber || '1'}
-              messages={messages}
+              messages={chatHistory.filter(msg => msg.type === 'ai')}
               loading={problemFlowLoading}
               problemState={problemState}
             />

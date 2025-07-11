@@ -1,12 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getWeekContent } from '@/lib/weekContent';
 
-interface ProblemState {
-  currentProblemIndex: number;
-  currentSubproblemIndex: number;
-  isComplete: boolean;
-}
-
 interface Message {
   id: string;
   type: 'ai' | 'user';
@@ -14,119 +8,110 @@ interface Message {
   timestamp: number;
 }
 
+interface ProblemState {
+  currentProblemIndex: number;
+  currentSubproblemIndex: number;
+  isComplete: boolean;
+}
+
+const generateId = () => Math.random().toString(36).substring(2, 9);
+
 export const useProblemFlow = (weekNumber: string) => {
-  const [weekContent, setWeekContent] = useState(null);
+  const [weekContent, setWeekContent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [userResponses, setUserResponses] = useState<string[]>([]);
+  const [chatHistory, setChatHistory] = useState<Message[]>([]);
   const [problemState, setProblemState] = useState<ProblemState>({
     currentProblemIndex: 0,
     currentSubproblemIndex: 0,
     isComplete: false,
   });
 
-  // Load week content on mount
+  // Load week content and initialize first problem
   useEffect(() => {
     const loadWeekContent = async () => {
       setLoading(true);
       const content = await getWeekContent(weekNumber);
-      const full_problems = content.content.Problems;
-      setWeekContent(full_problems);
-      
-      if (content) {
-        // Initialize with first problem/subproblem
-        await initializeFirstProblem(full_problems);
-      }
+      const fullProblems = content.content.Problems;
+      setWeekContent(fullProblems);
       setLoading(false);
+
+      if (fullProblems?.length) {
+        const firstProblem = fullProblems[0]['Problem Main Question'];
+        const firstSubQuestion = fullProblems[0]['Problem Subquestion'][0];
+
+        // The initial chat history is empty.
+        await sendToAI({
+          action: 'initialize',
+          problem: firstProblem,
+          subproblem: firstSubQuestion,
+          chatHistory: [],
+        });
+      }
     };
 
     loadWeekContent();
   }, [weekNumber]);
 
-  // Initialize conversation with first problem
-  const initializeFirstProblem = async (content) => {
-    const firstProblem = content[problemState.currentProblemIndex]['Problem Main Question']
-    const firstSubQuestion = content[problemState.currentProblemIndex]['Problem Subquestion'][problemState.currentSubproblemIndex]
-
-    const aiMessage = await sendToAI({
-      action: 'initialize',
-      problem: firstProblem,
-      subproblem: firstSubQuestion
-    });
-
-    setMessages([{
-      id: generateId(),
-      type: 'ai',
-      content: aiMessage,
-      timestamp: Date.now(),
-    }]);
-  };
-
-  // Handle user response
   const handleUserResponse = useCallback(async (userMessage: string) => {
-    // Save user response (but don't display it)
-    setUserResponses(prev => [...prev, userMessage]);
+    const userMsg: Message = {
+      id: generateId(),
+      type: 'user',
+      content: userMessage,
+      timestamp: Date.now(),
+    };
+
+    const updatedChatHistory = [...chatHistory, userMsg];
+    setChatHistory(updatedChatHistory);
 
     if (!weekContent) return;
 
     const currentProblem = weekContent[problemState.currentProblemIndex];
-
     const currentMainQuestion = currentProblem['Problem Main Question'];
     const currentSubproblem = currentProblem['Problem Subquestion'][problemState.currentSubproblemIndex];
-    const currentSubSolution = currentProblem['Problem Solution'][problemState.currentSubproblemIndex]
+    const currentSubSolution = currentProblem['Problem Solution'][problemState.currentSubproblemIndex];
 
-    // Send to AI for validation
     const aiResponse = await sendToAI({
       action: 'validate',
-      userResponse: userMessage,
       problem: currentMainQuestion,
       subproblem: currentSubproblem,
       solution: currentSubSolution,
       currentState: problemState,
+      chatHistory: updatedChatHistory,
     });
 
-    // Add AI response to messages
-    setMessages(prev => [...prev, {
-      id: generateId(),
-      type: 'ai',
-      content: aiResponse.message,
-      timestamp: Date.now(),
-    }]);
-
-    // If validation successful, move to next problem/subproblem
     if (aiResponse.isCorrect) {
       await moveToNextProblem();
     }
-  }, [weekContent, problemState]);
+  }, [chatHistory, weekContent, problemState]);
 
-  // Move to next problem/subproblem
   const moveToNextProblem = async () => {
     if (!weekContent) return;
 
     const currentProblem = weekContent[problemState.currentProblemIndex];
-    const nextSubproblemIndex = problemState.currentSubproblemIndex + 1;
-
+    const nextSubIndex = problemState.currentSubproblemIndex + 1;
     let nextState = { ...problemState };
 
-    // Check if there are more subproblems in current problem
-    if (currentProblem['Problem Subquestion'] && nextSubproblemIndex < currentProblem['Problem Subquestion'].length) {
-      nextState.currentSubproblemIndex = nextSubproblemIndex;
+    if (nextSubIndex < currentProblem['Problem Subquestion'].length) {
+      nextState.currentSubproblemIndex = nextSubIndex;
     } else {
-      // Move to next problem
       const nextProblemIndex = problemState.currentProblemIndex + 1;
-      
       if (nextProblemIndex < weekContent.length) {
-        nextState.currentProblemIndex = nextProblemIndex;
-        nextState.currentSubproblemIndex = 0;
+        nextState = {
+          currentProblemIndex: nextProblemIndex,
+          currentSubproblemIndex: 0,
+          isComplete: false,
+        };
       } else {
-        // All problems completed
         nextState.isComplete = true;
-        setMessages(prev => [...prev, {
-          id: generateId(),
-          type: 'ai',
-          content: 'Congratulations! You have completed all problems for this week.',
-          timestamp: Date.now(),
-        }]);
+        setChatHistory(prev => [
+          ...prev,
+          {
+            id: generateId(),
+            type: 'ai',
+            content: '🎉 You completed all problems for this week!',
+            timestamp: Date.now(),
+          },
+        ]);
         setProblemState(nextState);
         return;
       }
@@ -134,61 +119,87 @@ export const useProblemFlow = (weekNumber: string) => {
 
     setProblemState(nextState);
 
-    // Get next problem/subproblem and send to AI
     const nextProblem = weekContent[nextState.currentProblemIndex];
-
     const nextMainQuestion = nextProblem['Problem Main Question'];
-    const nextSubproblem = nextProblem['Problem Subquestion'][nextState.currentSubproblemIndex]
+    const nextSubproblem = nextProblem['Problem Subquestion'][nextState.currentSubproblemIndex];
 
-    const aiMessage = await sendToAI({
+    await sendToAI({
       action: 'next',
       problem: nextMainQuestion,
       subproblem: nextSubproblem,
       currentState: nextState,
+      chatHistory, // Pass the current chat history
+    });
+  };
+
+  const sendToAI = async (payload: any): Promise<any> => {
+    const aiMsgId = generateId();
+    const placeholderMessage: Message = {
+      id: aiMsgId,
+      type: 'ai',
+      content: '...',
+      timestamp: Date.now(),
+    };
+
+    // Use a function for setChatHistory to get the latest state
+    setChatHistory(prev => [...prev, placeholderMessage]);
+
+    console.log(chatHistory)
+    const response = await fetch('http://localhost:5001/api/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
 
-    setMessages(prev => [...prev, {
-      id: generateId(),
-      type: 'ai',
-      content: aiMessage,
-      timestamp: Date.now(),
-    }]);
-  };
+    if (!response.body) return {};
 
-  // Mock AI service call (replace with actual API call)
-  const sendToAI = async (payload: any): Promise<any> => {
-    // This would be your actual AI service call
-    // For now, returning mock responses
-    console.log(payload.userResponse)
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let validationResult = { isCorrect: false };
+    let fullMessage = '';
+    let firstChunk = true;
 
-    switch (payload.action) {
-      case 'initialize':
-        return `Let's begin. ${payload.problem}\n\n${payload.subproblem}`;
-      
-      case 'validate':
-        // Mock validation logic
-        const isCorrect = payload.userResponse.length > 10; // Simple mock validation
-        return {
-          isCorrect,
-          message: isCorrect 
-            ? "Great job! That's correct. Let's move to the next problem."
-            : "That's not quite right. Let me give you a hint: " + (payload.subproblem?.hint || "Think about the problem from a different angle.")
-        };
-      
-      case 'next':
-        return `Now let's tackle Problem ${payload.problem}:\n\n${payload.subproblem}`;
-      
-      default:
-        return "I'm here to help you learn!";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n\n').filter(line => line.trim());
+
+      for (const line of lines) {
+        const data = line.replace(/^data: /, '');
+        try {
+          const parsed = JSON.parse(data);
+
+          if (payload.action === 'validate' && firstChunk) {
+            validationResult.isCorrect = parsed.isCorrect;
+            firstChunk = false;
+            if (!parsed.chunk) continue;
+          }
+
+          if (parsed.chunk) {
+            fullMessage += parsed.chunk;
+
+            setChatHistory(prev =>
+              prev.map(msg =>
+                msg.id === aiMsgId
+                  ? { ...msg, content: fullMessage }
+                  : msg
+              )
+            );
+          }
+        } catch (e) {
+          console.error('Error parsing streamed chunk:', data);
+        }
+      }
     }
-  };
 
-  const generateId = () => Math.random().toString(36).substr(2, 9);
+    return validationResult;
+  };
 
   return {
     loading,
-    messages,
-    userResponses,
+    chatHistory,
     problemState,
     handleUserResponse,
     weekContent,
