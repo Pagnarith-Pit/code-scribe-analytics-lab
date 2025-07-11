@@ -141,10 +141,15 @@ export const useProblemFlow = (weekNumber: string) => {
       timestamp: Date.now(),
     };
 
-    // Use a function for setChatHistory to get the latest state
-    setChatHistory(prev => [...prev, placeholderMessage]);
 
-    console.log(chatHistory)
+    let localChatHistory: Message[] = [];
+
+    // Add placeholder first
+    setChatHistory(prev => {
+      localChatHistory = [...prev, placeholderMessage];
+      return localChatHistory;
+    });
+
     const response = await fetch('http://localhost:5001/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -180,19 +185,27 @@ export const useProblemFlow = (weekNumber: string) => {
           if (parsed.chunk) {
             fullMessage += parsed.chunk;
 
-            setChatHistory(prev =>
-              prev.map(msg =>
+            setChatHistory(prev => {
+              const updated = prev.map(msg =>
                 msg.id === aiMsgId
                   ? { ...msg, content: fullMessage }
                   : msg
-              )
-            );
+              );
+              localChatHistory = updated; // keep it up to date
+              return updated;
+            });
           }
+
         } catch (e) {
           console.error('Error parsing streamed chunk:', data);
         }
       }
     }
+
+    // await saveChatHistoryToDB({
+    //   weekNumber,
+    //   chatHistory: localChatHistory,
+    // });
 
     return validationResult;
   };

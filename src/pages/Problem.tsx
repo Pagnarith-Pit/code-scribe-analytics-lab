@@ -25,6 +25,9 @@ print(greet("World"))
   const [leftPanelWidth, setLeftPanelWidth] = useState(70);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Hint popup state
+  const [isHintPopupOpen, setIsHintPopupOpen] = useState(false);
   
   const { runPython, isLoading: pyodideLoading, isRunning } = usePyodide();
   const { 
@@ -109,10 +112,18 @@ print(greet("World"))
           style={{ width: `${leftPanelWidth}%` }}
         >
           <div className="flex-1 min-h-0">
-          <div className="p-4">
+          <div className="p-4 flex justify-between items-center">
             <Link to="/module" className="text-black font-bold py-2 px-4 transition-colors">
               &larr; Back to Modules
             </Link> 
+            
+            <button 
+              onClick={() => setIsHintPopupOpen(true)}
+              className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-4 rounded-lg transition-colors"
+            >
+              Feeling Stuck? Get AI Hints
+            </button>
+
           </div>
 
             <WeekTopics 
@@ -167,6 +178,30 @@ print(greet("World"))
           </div>
         </div>
       </div>
+
+      {/* Hint Popup */}
+      {isHintPopupOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 relative max-w-lg w-full">
+            <button 
+              onClick={() => setIsHintPopupOpen(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl font-bold"
+              aria-label="Close hint"
+            >
+              &times;
+            </button>
+            <h3 className="text-xl font-bold mb-4">AI Hint</h3>
+            <p className="text-gray-700 mb-6">
+              Here is a helpful hint to get you unstuck. Try thinking about the problem in smaller pieces first.
+            </p>
+            <div className="flex justify-end">
+              <button className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                Need More Help?
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
