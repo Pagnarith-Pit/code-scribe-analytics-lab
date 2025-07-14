@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getWeekContent } from '@/lib/weekContent';
+import { 
+  SessionService, 
+  WeekContentService, 
+  ChatService,
+  APIService,
+  WeekContent,
+  SessionData
+} from '@/lib/databaseService';
 
 interface Message {
   id: string;
@@ -14,16 +21,10 @@ interface ProblemState {
   isComplete: boolean;
 }
 
-// Define a structure for our new analytics
-interface SubproblemAnalytics {
-  startTime: number;
-  // We can add hint analytics here later if needed
-}
-
-const generateId = () => Math.random().toString(36).substring(2, 9);
+const generateId = () => crypto.randomUUID();
 
 export const useProblemFlow = (weekNumber: string) => {
-  const [weekContent, setWeekContent] = useState<any>(null);
+  const [weekContent, setWeekContent] = useState<WeekContent[]>([]);
   const [loading, setLoading] = useState(true);
   const [chatHistory, setChatHistory] = useState<Message[]>([]);
   const [problemState, setProblemState] = useState<ProblemState>({
@@ -31,47 +32,71 @@ export const useProblemFlow = (weekNumber: string) => {
     currentSubproblemIndex: 0,
     isComplete: false,
   });
-  const [flowAnalytics, setFlowAnalytics] = useState<Record<string, SubproblemAnalytics>>({});
+  
+  // Session management
+  const [sessionData, setSessionData] = useState<SessionData | null>(null);
 
-  const startSubproblemTimer = (problemIndex: number, subproblemIndex: number) => {
-    const key = `${problemIndex}-${subproblemIndex}`;
-    const startTime = Date.now();
-    console.log(`📊 Analytics: Starting timer for subproblem ${key} at ${startTime}`);
-    setFlowAnalytics(prev => ({
-      ...prev,
-      [key]: { startTime },
-    }));
-  };
-
-  // Load week content and initialize first problem
+  // Initialize everything
   useEffect(() => {
-    const loadWeekContent = async () => {
+    const initialize = async () => {
       setLoading(true);
-      const content = await getWeekContent(weekNumber);
-      const fullProblems = content.content.Problems;
-      setWeekContent(fullProblems);
-      setLoading(false);
+      try {
+        // Initialize session (handles user auth, progress, chat history)
+        const session = await SessionService.initializeSession(parseInt(weekNumber));
+        setSessionData(session);
 
-      if (fullProblems?.length) {
-        const firstProblem = fullProblems[0]['Problem Main Question'];
-        const firstSubQuestion = fullProblems[0]['Problem Subquestion'][0];
-        
-        startSubproblemTimer(0, 0); // Start timer for the very first problem
+        // Load week content
+        const content = await WeekContentService.getWeekContent(parseInt(weekNumber));
+        setWeekContent(content);
 
-        // The initial chat history is empty.
-        await sendToAI({
-          action: 'initialize',
-          problem: firstProblem,
-          subproblem: firstSubQuestion,
-          chatHistory: [],
+        if (content.length === 0) {
+          console.error('No content found for week', weekNumber);
+          setLoading(false);
+          return;
+        }
+
+        // Set current problem state from session
+        setProblemState({
+          currentProblemIndex: session.progress.current_problem,
+          currentSubproblemIndex: session.progress.current_subproblem,
+          isComplete: session.progress.is_complete,
         });
+
+        // Load existing chat history
+        const messages = ChatService.transformChatLogsToMessages(session.chatHistory);
+        setChatHistory(messages);
+
+        // If no existing chats and not complete, send initial message
+        if (session.chatHistory.length === 0 && !session.progress.is_complete) {
+          const currentContent = WeekContentService.getCurrentContent(
+            content,
+            session.progress.current_problem,
+            session.progress.current_subproblem
+          );
+
+          if (currentContent) {
+            await sendToAI({
+              action: 'initialize',
+              problem: currentContent.problem_text,
+              subproblem: currentContent.subproblem_text,
+              chatHistory: [],
+            }, session.progress.current_problem, session.progress.current_subproblem);
+          }
+        }
+
+      } catch (error) {
+        console.error('Error initializing:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadWeekContent();
+    initialize();
   }, [weekNumber]);
 
   const handleUserResponse = useCallback(async (userMessage: string) => {
+    if (!sessionData) return;
+
     const userMsg: Message = {
       id: generateId(),
       type: 'user',
@@ -82,77 +107,115 @@ export const useProblemFlow = (weekNumber: string) => {
     const updatedChatHistory = [...chatHistory, userMsg];
     setChatHistory(updatedChatHistory);
 
-    if (!weekContent) return;
+    // Save user message to database
+    await SessionService.saveMessage(
+      sessionData,
+      parseInt(weekNumber),
+      problemState.currentProblemIndex,
+      problemState.currentSubproblemIndex,
+      'user',
+      userMessage,
+      userMsg.timestamp
+    );
 
-    const currentProblem = weekContent[problemState.currentProblemIndex];
-    const currentMainQuestion = currentProblem['Problem Main Question'];
-    const currentSubproblem = currentProblem['Problem Subquestion'][problemState.currentSubproblemIndex];
-    const currentSubSolution = currentProblem['Problem Solution'][problemState.currentSubproblemIndex];
+    const currentContent = WeekContentService.getCurrentContent(
+      weekContent,
+      problemState.currentProblemIndex,
+      problemState.currentSubproblemIndex
+    );
+
+    if (!currentContent) return;
 
     const aiResponse = await sendToAI({
       action: 'validate',
-      problem: currentMainQuestion,
-      subproblem: currentSubproblem,
-      solution: currentSubSolution,
+      problem: currentContent.problem_text,
+      subproblem: currentContent.subproblem_text,
       currentState: problemState,
       chatHistory: updatedChatHistory,
-    });
+    }, problemState.currentProblemIndex, problemState.currentSubproblemIndex);
 
     if (aiResponse.isCorrect) {
       await moveToNextProblem();
     }
-  }, [chatHistory, weekContent, problemState]);
+  }, [chatHistory, weekContent, problemState, sessionData, weekNumber]);
 
   const moveToNextProblem = async () => {
-    if (!weekContent) return;
+    if (!sessionData || weekContent.length === 0) return;
 
-    const currentProblem = weekContent[problemState.currentProblemIndex];
-    const nextSubIndex = problemState.currentSubproblemIndex + 1;
+    const maxProblem = WeekContentService.getMaxProblemIndex(weekContent);
+    const maxSubproblem = WeekContentService.getMaxSubproblemIndex(weekContent, problemState.currentProblemIndex);
+
     let nextState = { ...problemState };
 
-    if (nextSubIndex < currentProblem['Problem Subquestion'].length) {
-      nextState.currentSubproblemIndex = nextSubIndex;
+    if (problemState.currentSubproblemIndex < maxSubproblem) {
+      // Move to next subproblem
+      nextState.currentSubproblemIndex = problemState.currentSubproblemIndex + 1;
+    } else if (problemState.currentProblemIndex < maxProblem) {
+      // Move to next problem
+      nextState.currentProblemIndex = problemState.currentProblemIndex + 1;
+      nextState.currentSubproblemIndex = 0;
     } else {
-      const nextProblemIndex = problemState.currentProblemIndex + 1;
-      if (nextProblemIndex < weekContent.length) {
-        nextState = {
-          currentProblemIndex: nextProblemIndex,
-          currentSubproblemIndex: 0,
-          isComplete: false,
-        };
-      } else {
-        nextState.isComplete = true;
-        setChatHistory(prev => [
-          ...prev,
-          {
-            id: generateId(),
-            type: 'ai',
-            content: '🎉 You completed all problems for this week!',
-            timestamp: Date.now(),
-          },
-        ]);
-        setProblemState(nextState);
-        return;
-      }
+      // Module complete
+      nextState.isComplete = true;
+      await SessionService.updateProgress(
+        sessionData,
+        problemState.currentProblemIndex,
+        problemState.currentSubproblemIndex,
+        true
+      );
+      
+      const completionMsg: Message = {
+        id: generateId(),
+        type: 'ai',
+        content: '🎉 You completed all problems for this week!',
+        timestamp: Date.now(),
+      };
+      
+      setChatHistory(prev => [...prev, completionMsg]);
+      await SessionService.saveMessage(
+        sessionData,
+        parseInt(weekNumber),
+        problemState.currentProblemIndex,
+        problemState.currentSubproblemIndex,
+        'ai',
+        completionMsg.content,
+        completionMsg.timestamp
+      );
+      setProblemState(nextState);
+      return;
     }
 
     setProblemState(nextState);
-    startSubproblemTimer(nextState.currentProblemIndex, nextState.currentSubproblemIndex); // Start timer for the next problem
+    await SessionService.updateProgress(
+      sessionData,
+      nextState.currentProblemIndex,
+      nextState.currentSubproblemIndex
+    );
 
-    const nextProblem = weekContent[nextState.currentProblemIndex];
-    const nextMainQuestion = nextProblem['Problem Main Question'];
-    const nextSubproblem = nextProblem['Problem Subquestion'][nextState.currentSubproblemIndex];
+    const nextContent = WeekContentService.getCurrentContent(
+      weekContent,
+      nextState.currentProblemIndex,
+      nextState.currentSubproblemIndex
+    );
 
-    await sendToAI({
-      action: 'next',
-      problem: nextMainQuestion,
-      subproblem: nextSubproblem,
-      currentState: nextState,
-      chatHistory, // Pass the current chat history
-    });
+    if (nextContent) {
+      await sendToAI({
+        action: 'next',
+        problem: nextContent.problem_text,
+        subproblem: nextContent.subproblem_text,
+        currentState: nextState,
+        chatHistory,
+      }, nextState.currentProblemIndex, nextState.currentSubproblemIndex);
+    }
   };
 
-  const sendToAI = async (payload: any): Promise<any> => {
+  const sendToAI = async (
+    payload: any, 
+    problemIndex: number, 
+    subproblemIndex: number
+  ): Promise<{ isCorrect: boolean }> => {
+    if (!sessionData) return { isCorrect: false };
+
     const aiMsgId = generateId();
     const placeholderMessage: Message = {
       id: aiMsgId,
@@ -161,73 +224,49 @@ export const useProblemFlow = (weekNumber: string) => {
       timestamp: Date.now(),
     };
 
+    setChatHistory(prev => [...prev, placeholderMessage]);
 
-    let localChatHistory: Message[] = [];
+    try {
+      const { isCorrect, fullMessage } = await APIService.sendToAI(payload);
 
-    // Add placeholder first
-    setChatHistory(prev => {
-      localChatHistory = [...prev, placeholderMessage];
-      return localChatHistory;
-    });
+      // Update the placeholder message with the final content
+      const finalMessage: Message = {
+        id: aiMsgId,
+        type: 'ai',
+        content: fullMessage,
+        timestamp: Date.now(),
+      };
 
-    const response = await fetch('http://localhost:5001/api/ai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+      setChatHistory(prev => 
+        prev.map(msg => msg.id === aiMsgId ? finalMessage : msg)
+      );
 
-    if (!response.body) return {};
+      // Save final AI message to database
+      await SessionService.saveMessage(
+        sessionData,
+        parseInt(weekNumber),
+        problemIndex,
+        subproblemIndex,
+        'ai',
+        fullMessage,
+        finalMessage.timestamp
+      );
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let validationResult = { isCorrect: false };
-    let fullMessage = '';
-    let firstChunk = true;
+      return { isCorrect };
+    } catch (error) {
+      console.error('Error in AI request:', error);
+      
+      // Update with error message
+      setChatHistory(prev => 
+        prev.map(msg => 
+          msg.id === aiMsgId 
+            ? { ...msg, content: 'Sorry, there was an error communicating with the AI tutor.' }
+            : msg
+        )
+      );
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value);
-      const lines = chunk.split('\n\n').filter(line => line.trim());
-
-      for (const line of lines) {
-        const data = line.replace(/^data: /, '');
-        try {
-          const parsed = JSON.parse(data);
-
-          if (payload.action === 'validate' && firstChunk) {
-            validationResult.isCorrect = parsed.isCorrect;
-            firstChunk = false;
-            if (!parsed.chunk) continue;
-          }
-
-          if (parsed.chunk) {
-            fullMessage += parsed.chunk;
-
-            setChatHistory(prev => {
-              const updated = prev.map(msg =>
-                msg.id === aiMsgId
-                  ? { ...msg, content: fullMessage }
-                  : msg
-              );
-              localChatHistory = updated; // keep it up to date
-              return updated;
-            });
-          }
-
-        } catch (e) {
-          console.error('Error parsing streamed chunk:', data);
-        }
-      }
+      return { isCorrect: false };
     }
-
-    // await saveChatHistoryToDB({
-    //   weekNumber,
-    //   chatHistory: localChatHistory,
-    // });
-
-    return validationResult;
   };
 
   return {
@@ -236,6 +275,7 @@ export const useProblemFlow = (weekNumber: string) => {
     problemState,
     handleUserResponse,
     weekContent,
-    flowAnalytics, // Expose analytics data
+    currentRunId: sessionData?.runId || '',
+    currentUserId: sessionData?.userId || '',
   };
 };

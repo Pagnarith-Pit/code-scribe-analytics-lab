@@ -1,12 +1,20 @@
-import { useHintLogic } from '@/lib/hintLogic';
+import { useHintLogic } from '@/hooks/useHintLogic';
 
 interface HintSystemProps {
   weekNumber: string;
   problemIndex: number;
   subproblemIndex: number;
+  userId: string;
+  runId: string;
 }
 
-export const HintSystem = ({ weekNumber, problemIndex, subproblemIndex }: HintSystemProps) => {
+export const HintSystem = ({ 
+  weekNumber, 
+  problemIndex, 
+  subproblemIndex, 
+  userId, 
+  runId 
+}: HintSystemProps) => {
   const {
     isPopupOpen,
     isLoading,
@@ -15,13 +23,25 @@ export const HintSystem = ({ weekNumber, problemIndex, subproblemIndex }: HintSy
     openPopup,
     closePopup,
     handleNextHint,
-  } = useHintLogic({ weekNumber, problemIndex, subproblemIndex });
+  } = useHintLogic({ 
+    weekNumber, 
+    problemIndex, 
+    subproblemIndex, 
+    userId, 
+    runId 
+  });
+
+  // Don't render if essential props are missing
+  if (!userId || !runId) {
+    return null;
+  }
 
   return (
     <>
       <button
         onClick={openPopup}
         className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-4 rounded-lg transition-colors"
+        disabled={!userId || !runId}
       >
         Feeling Stuck? Get AI Hints
       </button>
@@ -36,7 +56,14 @@ export const HintSystem = ({ weekNumber, problemIndex, subproblemIndex }: HintSy
             >
               &times;
             </button>
-            <h3 className="text-xl font-bold mb-4">Here's a push:</h3>
+            
+            <div className="mb-4">
+              <h3 className="text-xl font-bold">Here's a push:</h3>
+              <div className="text-sm text-gray-500 mt-1">
+                Problem {problemIndex + 1}.{subproblemIndex + 1}
+              </div>
+            </div>
+            
             <div className="text-gray-700 mb-6 min-h-[60px]">
               {isLoading ? (
                 <div className="flex items-center">
@@ -44,9 +71,10 @@ export const HintSystem = ({ weekNumber, problemIndex, subproblemIndex }: HintSy
                   <span>Getting your hint...</span>
                 </div>
               ) : (
-                <p>{hintContent}</p>
+                <p className="whitespace-pre-wrap">{hintContent}</p>
               )}
             </div>
+            
             <div className="flex justify-end">
               {buttonConfig.nextLevel && (
                 <button

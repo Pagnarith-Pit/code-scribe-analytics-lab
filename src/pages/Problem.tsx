@@ -27,12 +27,15 @@ print(greet("World"))
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // All data comes from the hooks - no direct database calls
   const { runPython, isLoading: pyodideLoading, isRunning } = usePyodide();
   const { 
     loading: problemFlowLoading, 
     chatHistory, 
     problemState, 
-    handleUserResponse 
+    handleUserResponse,
+    currentRunId,
+    currentUserId,
   } = useProblemFlow(weekNumber || '1');
 
   const handleCodeChange = (code: string) => {
@@ -50,7 +53,7 @@ print(greet("World"))
     setExecutionTime(result.executionTime);
   };
 
-  // Resizable panel handlers (keeping existing logic)
+  // Resizable panel handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -83,6 +86,7 @@ print(greet("World"))
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
+  // Show loading screen while Python runtime initializes
   if (pyodideLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -110,19 +114,23 @@ print(greet("World"))
           style={{ width: `${leftPanelWidth}%` }}
         >
           <div className="flex-1 min-h-0">
-          <div className="p-4 flex justify-between items-center">
-            <Link to="/module" className="text-black font-bold py-2 px-4 transition-colors">
-              &larr; Back to Modules
-            </Link> 
-            
-            <HintSystem 
-              key={`${problemState.currentProblemIndex}-${problemState.currentSubproblemIndex}`}
-              weekNumber={weekNumber || '1'} 
-              problemIndex={problemState.currentProblemIndex}
-              subproblemIndex={problemState.currentSubproblemIndex}
-            />
-
-          </div>
+            <div className="p-4 flex justify-between items-center">
+              <Link to="/module" className="text-black font-bold py-2 px-4 transition-colors">
+                &larr; Back to Modules
+              </Link> 
+              
+              {/* Only render HintSystem when we have the required session data */}
+              {currentUserId && currentRunId && (
+                <HintSystem 
+                  key={`${problemState.currentProblemIndex}-${problemState.currentSubproblemIndex}`}
+                  weekNumber={weekNumber || '1'} 
+                  problemIndex={problemState.currentProblemIndex}
+                  subproblemIndex={problemState.currentSubproblemIndex}
+                  userId={currentUserId}
+                  runId={currentRunId}
+                />
+              )}
+            </div>
 
             <WeekTopics 
               weekNumber={weekNumber || '1'}
@@ -131,6 +139,7 @@ print(greet("World"))
               problemState={problemState}
             />
           </div>
+          
           <div className="h-20">
             <ChatDisplay 
               onSendMessage={handleUserResponse}
@@ -176,8 +185,6 @@ print(greet("World"))
           </div>
         </div>
       </div>
-
-      {/* Hint Popup is now inside HintSystem */}
     </div>
   );
 };
