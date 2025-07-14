@@ -71,7 +71,7 @@ export class AuthService {
 export class WeekContentService {
   static async getWeekContent(moduleNumber: number): Promise<WeekContent[]> {
     const { data, error } = await supabase
-      .from('WeekContent')
+      .from('weekcontent')
       .select('*')
       .eq('module_number', moduleNumber)
       .order('problem_index', { ascending: true })
@@ -114,8 +114,9 @@ export class StudentProgressService {
     moduleNumber: number
   ): Promise<StudentProgress> {
     // First, try to find existing incomplete progress
+ 
     const { data: existingProgress, error: progressError } = await supabase
-      .from('StudentProgress')
+      .from('studentprogress')
       .select('*')
       .eq('user_id', userId)
       .eq('module_number', moduleNumber)
@@ -128,6 +129,7 @@ export class StudentProgressService {
       console.log('📚 Resuming existing session:', existingProgress.run_id);
       return existingProgress;
     }
+
 
     // Create new session
     const newRunId = crypto.randomUUID();
@@ -143,8 +145,10 @@ export class StudentProgressService {
       updated_at: new Date().toISOString(),
     };
 
+    console.log(newProgress)
+
     const { data, error } = await supabase
-      .from('StudentProgress')
+      .from('studentprogress')
       .insert([newProgress])
       .select()
       .single();
@@ -165,7 +169,7 @@ export class StudentProgressService {
     isComplete: boolean = false
   ): Promise<void> {
     const { error } = await supabase
-      .from('StudentProgress')
+      .from('studentprogress')
       .update({
         current_problem: problemIndex,
         current_subproblem: subproblemIndex,
@@ -188,7 +192,7 @@ export class StudentProgressService {
   ): Promise<StudentProgress> {
     // Mark any existing incomplete progress as abandoned (optional)
     await supabase
-      .from('StudentProgress')
+      .from('studentprogress')
       .update({ updated_at: new Date().toISOString() })
       .eq('user_id', userId)
       .eq('module_number', moduleNumber)
@@ -207,7 +211,7 @@ export class ChatService {
     runId: string
   ): Promise<ChatLog[]> {
     const { data, error } = await supabase
-      .from('ChatLogs')
+      .from('chatlogs')
       .select('*')
       .eq('user_id', userId)
       .eq('module_number', moduleNumber)
@@ -245,7 +249,7 @@ export class ChatService {
     };
 
     const { error } = await supabase
-      .from('ChatLogs')
+      .from('chatlogs')
       .insert([chatLog]);
 
     if (error) {
@@ -274,7 +278,7 @@ export class HintService {
     subproblemIndex: number
   ): Promise<HintUsageLog[]> {
     const { data, error } = await supabase
-      .from('HintUsageLogs')
+      .from('hintusagelogs')
       .select('*')
       .eq('user_id', userId)
       .eq('module_number', moduleNumber)
@@ -321,7 +325,7 @@ export class HintService {
     };
 
     const { data, error } = await supabase
-      .from('HintUsageLogs')
+      .from('hintusagelogs')
       .insert([hintLog])
       .select()
       .single();
@@ -343,7 +347,7 @@ export class HintService {
     const durationSeconds = Math.round((timeClosed.getTime() - timeOpened.getTime()) / 1000);
 
     const { error } = await supabase
-      .from('HintUsageLogs')
+      .from('hintusagelogs')
       .update({
         time_closed: timeClosed.toISOString(),
         duration_seconds: durationSeconds,
@@ -381,11 +385,11 @@ export class HintService {
 export class AnalyticsService {
   static async getUserAnalytics(userId: string, moduleNumber?: number) {
     let query = supabase
-      .from('StudentProgress')
+      .from('studentprogress')
       .select(`
         *,
-        ChatLogs(*),
-        HintUsageLogs(*)
+        chatlogs(*),
+        hintusagelogs(*)
       `)
       .eq('user_id', userId);
 
@@ -405,11 +409,11 @@ export class AnalyticsService {
 
   static async getModuleAnalytics(moduleNumber: number) {
     const { data, error } = await supabase
-      .from('StudentProgress')
+      .from('studentprogress')
       .select(`
         *,
-        ChatLogs(*),
-        HintUsageLogs(*)
+        chatlogs(*),
+        hintusagelogs(*)
       `)
       .eq('module_number', moduleNumber);
 

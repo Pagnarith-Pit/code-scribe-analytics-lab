@@ -52,6 +52,8 @@ const SignUp = () => {
 
     const validationError = validateForm();
     if (validationError) {
+      console.error("Validation error:", validationError);
+      setIsLoading(false);
       setError(validationError);
       return;
     }

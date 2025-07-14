@@ -45,9 +45,11 @@ export const useProblemFlow = (weekNumber: string) => {
         const session = await SessionService.initializeSession(parseInt(weekNumber));
         setSessionData(session);
 
+
         // Load week content
         const content = await WeekContentService.getWeekContent(parseInt(weekNumber));
         setWeekContent(content);
+
 
         if (content.length === 0) {
           console.error('No content found for week', weekNumber);
@@ -68,12 +70,14 @@ export const useProblemFlow = (weekNumber: string) => {
 
         // If no existing chats and not complete, send initial message
         if (session.chatHistory.length === 0 && !session.progress.is_complete) {
+          
           const currentContent = WeekContentService.getCurrentContent(
             content,
             session.progress.current_problem,
             session.progress.current_subproblem
           );
 
+          console.log('Initializing with content:', currentContent);
           if (currentContent) {
             await sendToAI({
               action: 'initialize',

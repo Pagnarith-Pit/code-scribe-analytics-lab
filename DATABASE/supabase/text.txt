@@ -1,0 +1,1 @@
+curl -X DELETE http://localhost:8000/auth/v1/admin/users/0feb28b5-ce42-40c8-8d97-206e507300e1 -H "Authorization: Bearer Cd9Rr1sCiLoC0kyanwgkvYGbwpak9R4OqaJLsgfG" -H "apikey: Cd9Rr1sCiLoC0kyanwgkvYGbwpak9R4OqaJLsgfG"
