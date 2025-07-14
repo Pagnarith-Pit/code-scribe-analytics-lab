@@ -115,7 +115,12 @@ print(greet("World"))
               &larr; Back to Modules
             </Link> 
             
-            <HintSystem weekNumber={weekNumber || '1'} />
+            <HintSystem 
+              key={`${problemState.currentProblemIndex}-${problemState.currentSubproblemIndex}`}
+              weekNumber={weekNumber || '1'} 
+              problemIndex={problemState.currentProblemIndex}
+              subproblemIndex={problemState.currentSubproblemIndex}
+            />
 
           </div>
 

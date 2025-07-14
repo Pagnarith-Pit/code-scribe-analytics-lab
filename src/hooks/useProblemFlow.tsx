@@ -14,6 +14,12 @@ interface ProblemState {
   isComplete: boolean;
 }
 
+// Define a structure for our new analytics
+interface SubproblemAnalytics {
+  startTime: number;
+  // We can add hint analytics here later if needed
+}
+
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
 export const useProblemFlow = (weekNumber: string) => {
@@ -25,6 +31,17 @@ export const useProblemFlow = (weekNumber: string) => {
     currentSubproblemIndex: 0,
     isComplete: false,
   });
+  const [flowAnalytics, setFlowAnalytics] = useState<Record<string, SubproblemAnalytics>>({});
+
+  const startSubproblemTimer = (problemIndex: number, subproblemIndex: number) => {
+    const key = `${problemIndex}-${subproblemIndex}`;
+    const startTime = Date.now();
+    console.log(`📊 Analytics: Starting timer for subproblem ${key} at ${startTime}`);
+    setFlowAnalytics(prev => ({
+      ...prev,
+      [key]: { startTime },
+    }));
+  };
 
   // Load week content and initialize first problem
   useEffect(() => {
@@ -38,6 +55,8 @@ export const useProblemFlow = (weekNumber: string) => {
       if (fullProblems?.length) {
         const firstProblem = fullProblems[0]['Problem Main Question'];
         const firstSubQuestion = fullProblems[0]['Problem Subquestion'][0];
+        
+        startSubproblemTimer(0, 0); // Start timer for the very first problem
 
         // The initial chat history is empty.
         await sendToAI({
@@ -118,6 +137,7 @@ export const useProblemFlow = (weekNumber: string) => {
     }
 
     setProblemState(nextState);
+    startSubproblemTimer(nextState.currentProblemIndex, nextState.currentSubproblemIndex); // Start timer for the next problem
 
     const nextProblem = weekContent[nextState.currentProblemIndex];
     const nextMainQuestion = nextProblem['Problem Main Question'];
@@ -216,5 +236,6 @@ export const useProblemFlow = (weekNumber: string) => {
     problemState,
     handleUserResponse,
     weekContent,
+    flowAnalytics, // Expose analytics data
   };
 };

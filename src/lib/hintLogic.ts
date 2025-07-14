@@ -41,22 +41,24 @@ const fetchHintFromAPI = async (level: HintLevel, weekNumber: string): Promise<s
 };
 
 // This function would send the collected analytics to your database.
-const sendAnalyticsToAPI = (analytics: AnalyticsData) => {
-  console.log("📊 Sending Analytics Data:", JSON.stringify(analytics, null, 2));
+const sendAnalyticsToAPI = (analyticsPayload: any) => {
+  console.log("📊 Sending Analytics Data:", JSON.stringify(analyticsPayload, null, 2));
   // Example of a real API call:
   // fetch('YOUR_FLASK_API_ENDPOINT/save-hint-analytics', {
   //   method: 'POST',
   //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify(analytics),
+  //   body: JSON.stringify(analyticsPayload),
   // });
 };
 
 
 interface UseHintLogicProps {
   weekNumber: string;
+  problemIndex: number;
+  subproblemIndex: number;
 }
 
-export const useHintLogic = ({ weekNumber }: UseHintLogicProps) => {
+export const useHintLogic = ({ weekNumber, problemIndex, subproblemIndex }: UseHintLogicProps) => {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hintContent, setHintContent] = useState('');
@@ -79,20 +81,26 @@ export const useHintLogic = ({ weekNumber }: UseHintLogicProps) => {
         const duration = Date.now() - sessionStartTimeRef.current;
         const levelToUpdate = activeAnalyticsLevelRef.current;
         
-        setAnalyticsData(prev => {
-          const updatedData = { ...prev };
-          if (updatedData[levelToUpdate]) {
-            updatedData[levelToUpdate]!.totalVisibleDuration += duration;
-          }
-          return updatedData;
-        });
+        const updatedAnalytics = { ...analyticsData };
+        if (updatedAnalytics[levelToUpdate]) {
+          updatedAnalytics[levelToUpdate]!.totalVisibleDuration += duration;
+        }
 
+        setAnalyticsData(updatedAnalytics);
         sessionStartTimeRef.current = null;
-        // Send data when user closes the popup
-        sendAnalyticsToAPI(analyticsData);
+        
+        // Send data with the desired structure when user closes the popup
+        if (Object.keys(updatedAnalytics).length > 0) {
+          const analyticsPayload = {
+            Problem: problemIndex,
+            subproblem: subproblemIndex,
+            hintUsage: updatedAnalytics,
+          };
+          sendAnalyticsToAPI(analyticsPayload);
+        }
       }
     }
-  }, [isPopupOpen, hintLevel, analyticsData]);
+  }, [isPopupOpen, hintLevel, analyticsData, problemIndex, subproblemIndex]);
 
 
   const getButtonConfig = () => {

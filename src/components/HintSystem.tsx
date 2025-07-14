@@ -2,9 +2,11 @@ import { useHintLogic } from '@/lib/hintLogic';
 
 interface HintSystemProps {
   weekNumber: string;
+  problemIndex: number;
+  subproblemIndex: number;
 }
 
-export const HintSystem = ({ weekNumber }: HintSystemProps) => {
+export const HintSystem = ({ weekNumber, problemIndex, subproblemIndex }: HintSystemProps) => {
   const {
     isPopupOpen,
     isLoading,
@@ -13,7 +15,7 @@ export const HintSystem = ({ weekNumber }: HintSystemProps) => {
     openPopup,
     closePopup,
     handleNextHint,
-  } = useHintLogic({ weekNumber });
+  } = useHintLogic({ weekNumber, problemIndex, subproblemIndex });
 
   return (
     <>
