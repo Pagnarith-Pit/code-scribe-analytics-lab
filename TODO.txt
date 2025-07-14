@@ -1,7 +1,12 @@
 Include Participant Consent Form
 Protect Module Route before login
+Change the Module Description
 
 Features
 1) Connect to AI for answering
 2) Connect to AI for hints
 2) Saving students analytics 
+
+Today
+1) Redesign Database Schema
+2) Implementing Loading System
