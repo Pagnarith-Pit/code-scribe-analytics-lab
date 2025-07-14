@@ -2,5 +2,6 @@ Include Participant Consent Form
 Protect Module Route before login
 
 Features
-1) Connect to AI 
+1) Connect to AI for answering
+2) Connect to AI for hints
 2) Saving students analytics 

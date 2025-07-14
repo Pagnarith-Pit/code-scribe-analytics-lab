@@ -7,18 +7,29 @@ app = Flask(__name__)
 CORS(app)  # Enable Cross-Origin Resource Sharing
 
 def generate_response(payload):
-    print("Received payload:", payload.get('chatHistory'))
     """Generator function to stream response chunks."""
+    # Current Main Problem and Subproblem
+    main_problem = payload.get('problem', 'default')
+    sub_problem = payload.get('subproblem', 'default')
+    solution = payload.get('solution', 'default')
+
+    # Full ChatHistory 
+    chat_history = payload.get('chatHistory', [])
+
+    # Latest User Response
+    latest_response = chat_history[-1]['content'] if chat_history else 'default'
+
+    # AI Intended Action
     action = payload.get('action', 'default')
     response_text = ""
 
     if action == 'initialize':
-        response_text = f"Let's begin. {payload.get('problem', '')}\n\n{payload.get('subproblem', '')}"
+        response_text = f"Let's begin. {main_problem}\n\n {sub_problem}"
 
     elif action == 'validate':
         # In a real scenario, you might stream the reasoning before the final verdict.
-        # For this simulation, we'll stream the message.
-        is_correct = len(payload.get('userResponse', '')) > 10
+        # For this simulation, we'll stream the message
+        is_correct = len(latest_response) > 10
         message = "Great job! That's correct. Let's move to the next problem." if is_correct \
                   else "That's not quite right. Let me give you a hint: Think about the problem from a different angle."
         
