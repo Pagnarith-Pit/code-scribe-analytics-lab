@@ -28,8 +28,8 @@ export const useProblemFlow = (weekNumber: string) => {
   const [loading, setLoading] = useState(true);
   const [chatHistory, setChatHistory] = useState<Message[]>([]);
   const [problemState, setProblemState] = useState<ProblemState>({
-    currentProblemIndex: 0,
-    currentSubproblemIndex: 0,
+    currentProblemIndex: 1, // Start from problem 1
+    currentSubproblemIndex: 1, // Start from subproblem 1
     isComplete: false,
   });
   
@@ -78,6 +78,8 @@ export const useProblemFlow = (weekNumber: string) => {
           );
 
           console.log('Initializing with content:', currentContent);
+          // WE ARE HERE NOW AT TESTING POINT
+          // THE ISSUE IS THAT THE BACKEND IS NOT RESPONDING TO THE INITIALIZATION REQUEST
           if (currentContent) {
             await sendToAI({
               action: 'initialize',
@@ -157,7 +159,7 @@ export const useProblemFlow = (weekNumber: string) => {
     } else if (problemState.currentProblemIndex < maxProblem) {
       // Move to next problem
       nextState.currentProblemIndex = problemState.currentProblemIndex + 1;
-      nextState.currentSubproblemIndex = 0;
+      nextState.currentSubproblemIndex = 1;
     } else {
       // Module complete
       nextState.isComplete = true;

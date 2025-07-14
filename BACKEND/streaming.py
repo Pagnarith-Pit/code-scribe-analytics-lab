@@ -8,6 +8,7 @@ CORS(app)  # Enable Cross-Origin Resource Sharing
 
 def generate_response(payload):
     """Generator function to stream response chunks."""
+    
     # Current Main Problem and Subproblem
     main_problem = payload.get('problem', 'default')
     sub_problem = payload.get('subproblem', 'default')
