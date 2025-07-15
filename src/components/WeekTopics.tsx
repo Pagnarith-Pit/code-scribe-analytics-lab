@@ -1,15 +1,9 @@
 import React from 'react';
-
-interface Message {
-  id: string;
-  type: 'ai' | 'user';
-  content: string;
-  timestamp: number;
-}
+import { ChatLog } from '@/lib/databaseService'; // Import the ChatLog type
 
 interface WeekTopicsProps {
   weekNumber: string;
-  messages: Message[];
+  messages: ChatLog[]; // Use ChatLog[] for the messages prop
   loading: boolean;
   problemState: {
     currentProblemIndex: number;
@@ -52,18 +46,18 @@ export const WeekTopics: React.FC<WeekTopicsProps> = ({
             key={message.id}
             // This is the message border. 
             // className={`p-4 rounded-lg ${
-            //   message.type === 'ai' 
+            //   message.role === 'ai' // Use message.role
             //     ? 'bg-blue-50 border-l-4 border-blue-400' 
             //     : 'bg-gray-50 border-l-4 border-gray-400'
             // }`}
           >
             <div className="whitespace-pre-wrap text-gray-800">
-              {message.content}
+              {message.message} {/* Use message.message instead of message.content */}
             </div>
             
             {/* This is a chat timestamp */}
             {/* <div className="text-xs text-gray-500 mt-2">
-              {new Date(message.timestamp).toLocaleTimeString()}
+              {new Date(message.time_sent).toLocaleTimeString()} // Use message.time_sent
             </div> */}
           </div>
         ))}

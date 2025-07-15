@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { sub } from 'date-fns';
 
 // ===== TYPE DEFINITIONS =====
 export interface WeekContent {
@@ -8,6 +9,7 @@ export interface WeekContent {
   subproblem_index: number;
   problem_text: string;
   subproblem_text: string;
+  subproblem_solution: string;
 }
 
 export interface StudentProgress {
@@ -494,7 +496,13 @@ export class APIService {
     level: 'initial' | 'more_help' | 'solution',
     weekNumber: string,
     problemIndex: number,
-    subproblemIndex: number
+    subproblemIndex: number,
+    problemText: string,
+    subProblemText: string,
+    subProblemSolutionText: string,
+    chatHistory: ChatLog[],
+    currentUserCode: string
+
   ): Promise<string> {
     console.log(`Fetching hint via API for week ${weekNumber}, problem ${problemIndex}.${subproblemIndex}, level: ${level}`);
     
@@ -506,7 +514,12 @@ export class APIService {
           week_number: weekNumber, 
           problem_index: problemIndex,
           subproblem_index: subproblemIndex,
-          hint_level: level 
+          subproblem_solution: subProblemSolutionText,
+          hint_level: level,
+          problem_text: problemText,
+          sub_problem_text: subProblemText,
+          chat_history: chatHistory,
+          user_code: currentUserCode
         }),
       });
       
@@ -514,23 +527,11 @@ export class APIService {
         throw new Error('Failed to fetch hint');
       }
       
-      const data = await response.json();
-      return data.hint;
+      const hint = response['hint'];
+      return hint;
+
     } catch (error) {
       console.error('Error fetching hint:', error);
-      
-      // Fallback hints for development
-      await new Promise(resolve => setTimeout(resolve, 800));
-      switch (level) {
-        case 'initial':
-          return "Break the problem down into smaller, manageable steps.";
-        case 'more_help':
-          return "Consider using a loop to iterate through the data.";
-        case 'solution':
-          return "1. Initialize a variable. 2. Loop. 3. Calculate. 4. Return result.";
-        default:
-          return "No hint available.";
-      }
     }
   }
 

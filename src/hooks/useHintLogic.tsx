@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { HintService, APIService, HintUsageLog } from '@/lib/databaseService';
+import { HintService, APIService, HintUsageLog, ChatLog } from '@/lib/databaseService';
 
 export type HintLevel = 'initial' | 'more_help' | 'solution';
 
@@ -9,6 +9,11 @@ interface UseHintLogicProps {
   subproblemIndex: number;
   userId: string;
   runId: string;
+  problemText: string;
+  subProblemText: string;
+  subProblemSolutionText: string; // Optional for solution hints
+  chatHistory: ChatLog[];
+  currentUserCode: string;
 }
 
 export const useHintLogic = ({ 
@@ -16,7 +21,12 @@ export const useHintLogic = ({
   problemIndex, 
   subproblemIndex, 
   userId, 
-  runId 
+  runId,
+  problemText,
+  subProblemText,
+  subProblemSolutionText,
+  chatHistory,
+  currentUserCode
 }: UseHintLogicProps) => {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -100,7 +110,12 @@ export const useHintLogic = ({
         level, 
         weekNumber, 
         problemIndex, 
-        subproblemIndex
+        subproblemIndex,
+        problemText,
+        subProblemText,
+        subProblemSolutionText,
+        chatHistory,
+        currentUserCode
       );
       setHintContent(newHint);
 
@@ -126,7 +141,7 @@ export const useHintLogic = ({
     } finally {
       setIsLoading(false);
     }
-  }, [weekNumber, problemIndex, subproblemIndex, userId, runId]);
+  }, [weekNumber, problemIndex, subproblemIndex, userId, runId, problemText, subProblemText, chatHistory, currentUserCode]);
 
   const openPopup = () => {
     setIsPopupOpen(true);

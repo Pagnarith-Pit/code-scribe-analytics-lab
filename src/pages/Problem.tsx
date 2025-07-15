@@ -36,6 +36,9 @@ print(greet("World"))
     handleUserResponse,
     currentRunId,
     currentUserId,
+    currentProblemText,
+    currentSubProblemText,
+    currentSubProblemSolutionText
   } = useProblemFlow(weekNumber || '1');
 
   const handleCodeChange = (code: string) => {
@@ -128,13 +131,18 @@ print(greet("World"))
                   subproblemIndex={problemState.currentSubproblemIndex}
                   userId={currentUserId}
                   runId={currentRunId}
+                  currentUserCode={currentCode}
+                  chatHistory={chatHistory}
+                  problemText={currentProblemText}
+                  subProblemText={currentSubProblemText}
+                  subProblemSolutionText={currentSubProblemSolutionText}
                 />
               )}
             </div>
-            
+
             <WeekTopics 
               weekNumber={weekNumber || '1'}
-              messages={chatHistory.filter(msg => msg.type === 'ai')}
+              messages={chatHistory.filter(msg => msg.role === 'ai')}
               loading={problemFlowLoading}
               problemState={problemState}
             />

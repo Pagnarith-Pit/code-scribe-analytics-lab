@@ -1,4 +1,5 @@
 import { useHintLogic } from '@/hooks/useHintLogic';
+import { ChatLog } from '@/lib/databaseService'; // Assuming ChatLog type is exported
 
 interface HintSystemProps {
   weekNumber: string;
@@ -6,6 +7,11 @@ interface HintSystemProps {
   subproblemIndex: number;
   userId: string;
   runId: string;
+  problemText: string;
+  subProblemText: string;
+  subProblemSolutionText: string; // Optional for solution hints
+  chatHistory: ChatLog[];
+  currentUserCode: string;
 }
 
 export const HintSystem = ({ 
@@ -13,7 +19,12 @@ export const HintSystem = ({
   problemIndex, 
   subproblemIndex, 
   userId, 
-  runId 
+  runId,
+  problemText,
+  subProblemText,
+  subProblemSolutionText,
+  chatHistory,
+  currentUserCode
 }: HintSystemProps) => {
   const {
     isPopupOpen,
@@ -28,7 +39,12 @@ export const HintSystem = ({
     problemIndex, 
     subproblemIndex, 
     userId, 
-    runId 
+    runId,
+    problemText,
+    subProblemText,
+    subProblemSolutionText,
+    chatHistory,
+    currentUserCode
   });
 
   // Don't render if essential props are missing

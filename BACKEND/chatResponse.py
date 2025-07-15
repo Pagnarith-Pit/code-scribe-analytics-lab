@@ -1,14 +1,8 @@
-import time
-from flask import Flask, request, Response
-from flask_cors import CORS
 import json
-
-app = Flask(__name__)
-CORS(app)  # Enable Cross-Origin Resource Sharing
-
+import time
 def generate_response(payload):
     """Generator function to stream response chunks."""
-    
+    print(payload)
     # Current Main Problem and Subproblem
     main_problem = payload.get('problem', 'default')
     sub_problem = payload.get('subproblem', 'default')
@@ -18,7 +12,7 @@ def generate_response(payload):
     chat_history = payload.get('chatHistory', [])
 
     # Latest User Response
-    latest_response = chat_history[-1]['content'] if chat_history else 'default'
+    latest_response = chat_history[-1]['message'] if chat_history else 'default'
 
     # AI Intended Action
     action = payload.get('action', 'default')
@@ -52,11 +46,3 @@ def generate_response(payload):
     for word in response_text.split():
         yield f"data: {json.dumps({'chunk': word + ' '})}\n\n"
         time.sleep(0.05)
-
-@app.route('/api/ai', methods=['POST'])
-def ai_service():
-    payload = request.json
-    return Response(generate_response(payload), mimetype='text/event-stream')
-
-if __name__ == '__main__':
-    app.run(port=5001, debug=True)

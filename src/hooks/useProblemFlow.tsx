@@ -2,18 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { 
   SessionService, 
   WeekContentService, 
-  ChatService,
   APIService,
-  WeekContent,
-  SessionData
+  type WeekContent,
+  type SessionData,
+  type ChatLog // Use ChatLog from the service
 } from '@/lib/databaseService';
 
-interface Message {
-  id: string;
-  type: 'ai' | 'user';
-  content: string;
-  timestamp: number;
-}
+// The local Message interface is no longer needed and has been removed.
 
 interface ProblemState {
   currentProblemIndex: number;
@@ -26,30 +21,25 @@ const generateId = () => crypto.randomUUID();
 export const useProblemFlow = (weekNumber: string) => {
   const [weekContent, setWeekContent] = useState<WeekContent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [chatHistory, setChatHistory] = useState<Message[]>([]);
+  // State now uses the ChatLog[] type directly.
+  const [chatHistory, setChatHistory] = useState<ChatLog[]>([]);
   const [problemState, setProblemState] = useState<ProblemState>({
-    currentProblemIndex: 1, // Start from problem 1
-    currentSubproblemIndex: 1, // Start from subproblem 1
+    currentProblemIndex: 1,
+    currentSubproblemIndex: 1,
     isComplete: false
   });
   
-  // Session management
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
 
-  // Initialize everything
   useEffect(() => {
     const initialize = async () => {
       setLoading(true);
       try {
-        // Initialize session (handles user auth, progress, chat history)
         const session = await SessionService.initializeSession(parseInt(weekNumber));
         setSessionData(session);
 
-
-        // Load week content
         const content = await WeekContentService.getWeekContent(parseInt(weekNumber));
         setWeekContent(content);
-
 
         if (content.length === 0) {
           console.error('No content found for week', weekNumber);
@@ -57,38 +47,31 @@ export const useProblemFlow = (weekNumber: string) => {
           return;
         }
 
-        // Set current problem state from session
         setProblemState({
           currentProblemIndex: session.progress.current_problem,
           currentSubproblemIndex: session.progress.current_subproblem,
           isComplete: session.progress.is_complete,
         });
 
-        // Load existing chat history
-        const messages = ChatService.transformChatLogsToMessages(session.chatHistory);
-        setChatHistory(messages);
+        // No transformation needed. Use the chat history from the session directly.
+        setChatHistory(session.chatHistory);
 
-        // If no existing chats and not complete, send initial message
         if (session.chatHistory.length === 0 && !session.progress.is_complete) {
-          
           const currentContent = WeekContentService.getCurrentContent(
             content,
             session.progress.current_problem,
             session.progress.current_subproblem
           );
 
-          console.log('Initializing with content:', currentContent);
-
           if (currentContent) {
-            sendToAI({
+            await sendToAI({
               action: 'initialize',
               problem: currentContent.problem_text,
               subproblem: currentContent.subproblem_text,
               chatHistory: [],
-            }, session.progress.current_problem, session.progress.current_subproblem, session); // Pass the 'session' object here
+            }, session.progress.current_problem, session.progress.current_subproblem, session);
           }
         }
-
       } catch (error) {
         console.error('Error initializing:', error);
       } finally {
@@ -99,20 +82,32 @@ export const useProblemFlow = (weekNumber: string) => {
     initialize();
   }, [weekNumber]);
 
+  const currentContent = WeekContentService.getCurrentContent(
+    weekContent,
+    problemState.currentProblemIndex,
+    problemState.currentSubproblemIndex
+  );
+
   const handleUserResponse = useCallback(async (userMessage: string) => {
     if (!sessionData) return;
 
-    const userMsg: Message = {
+    const timestamp = new Date();
+    // Create a full ChatLog object for the user's message.
+    const userMsg: ChatLog = {
       id: generateId(),
-      type: 'user',
-      content: userMessage,
-      timestamp: Date.now(),
+      user_id: sessionData.userId,
+      module_number: parseInt(weekNumber),
+      run_id: sessionData.runId,
+      problem_index: problemState.currentProblemIndex,
+      subproblem_index: problemState.currentSubproblemIndex,
+      role: 'user',
+      message: userMessage,
+      time_sent: timestamp.toISOString(),
     };
 
     const updatedChatHistory = [...chatHistory, userMsg];
     setChatHistory(updatedChatHistory);
 
-    // Save user message to database
     await SessionService.saveMessage(
       sessionData,
       parseInt(weekNumber),
@@ -120,13 +115,7 @@ export const useProblemFlow = (weekNumber: string) => {
       problemState.currentSubproblemIndex,
       'user',
       userMessage,
-      userMsg.timestamp
-    );
-
-    const currentContent = WeekContentService.getCurrentContent(
-      weekContent,
-      problemState.currentProblemIndex,
-      problemState.currentSubproblemIndex
+      timestamp.getTime() // Pass timestamp as a number to the service
     );
 
     if (!currentContent) return;
@@ -136,13 +125,13 @@ export const useProblemFlow = (weekNumber: string) => {
       problem: currentContent.problem_text,
       subproblem: currentContent.subproblem_text,
       currentState: problemState,
-      chatHistory: updatedChatHistory,
+      chatHistory: updatedChatHistory, // Pass the updated ChatLog[]
     }, problemState.currentProblemIndex, problemState.currentSubproblemIndex, sessionData);
 
     if (aiResponse.isCorrect) {
       await moveToNextProblem();
     }
-  }, [chatHistory, weekContent, problemState, sessionData, weekNumber]);
+  }, [chatHistory, problemState, sessionData, weekNumber, currentContent]);
 
   const moveToNextProblem = async () => {
     if (!sessionData || weekContent.length === 0) return;
@@ -153,14 +142,11 @@ export const useProblemFlow = (weekNumber: string) => {
     let nextState = { ...problemState };
 
     if (problemState.currentSubproblemIndex < maxSubproblem) {
-      // Move to next subproblem
-      nextState.currentSubproblemIndex = problemState.currentSubproblemIndex + 1;
+      nextState.currentSubproblemIndex += 1;
     } else if (problemState.currentProblemIndex < maxProblem) {
-      // Move to next problem
-      nextState.currentProblemIndex = problemState.currentProblemIndex + 1;
+      nextState.currentProblemIndex += 1;
       nextState.currentSubproblemIndex = 1;
     } else {
-      // Module complete
       nextState.isComplete = true;
       await SessionService.updateProgress(
         sessionData,
@@ -169,11 +155,18 @@ export const useProblemFlow = (weekNumber: string) => {
         true
       );
       
-      const completionMsg: Message = {
+      const completionTimestamp = new Date();
+      // Create a full ChatLog object for the completion message.
+      const completionMsg: ChatLog = {
         id: generateId(),
-        type: 'ai',
-        content: 'Well Done! You have completed all problems for this week. Keep up the great work!',
-        timestamp: Date.now(),
+        user_id: sessionData.userId,
+        run_id: sessionData.runId,
+        module_number: parseInt(weekNumber),
+        problem_index: problemState.currentProblemIndex,
+        subproblem_index: problemState.currentSubproblemIndex,
+        role: 'ai',
+        message: 'Well Done! You have completed all problems for this week. Keep up the great work!',
+        time_sent: completionTimestamp.toISOString(),
       };
       
       setChatHistory(prev => [...prev, completionMsg]);
@@ -183,8 +176,8 @@ export const useProblemFlow = (weekNumber: string) => {
         problemState.currentProblemIndex,
         problemState.currentSubproblemIndex,
         'ai',
-        completionMsg.content,
-        completionMsg.timestamp
+        completionMsg.message,
+        completionTimestamp.getTime() // Pass timestamp as a number
       );
       setProblemState(nextState);
       return;
@@ -218,27 +211,32 @@ export const useProblemFlow = (weekNumber: string) => {
     payload: any, 
     problemIndex: number, 
     subproblemIndex: number,
-    currentSession: SessionData | null // Add this parameter
+    currentSession: SessionData | null
   ): Promise<{ isCorrect: boolean }> => {
-    if (!currentSession) return { isCorrect: false }; // Use the parameter here
+    if (!currentSession) return { isCorrect: false };
 
     const aiMsgId = generateId();
-    const placeholderMessage: Message = {
+    // Create a placeholder that conforms to the ChatLog type.
+    const placeholderMessage: ChatLog = {
       id: aiMsgId,
-      type: 'ai',
-      content: '', // Start with empty content
-      timestamp: Date.now(),
+      user_id: currentSession.userId,
+      module_number: parseInt(weekNumber),
+      run_id: currentSession.runId,
+      problem_index: problemIndex,
+      subproblem_index: subproblemIndex,
+      role: 'ai',
+      message: '', // Start with empty content
+      time_sent: new Date().toISOString(),
     };
 
     setChatHistory(prev => [...prev, placeholderMessage]);
 
     try {
-      // Define the callback to stream content into the message
       const handleChunk = (chunk: string) => {
         setChatHistory(prev =>
           prev.map(msg =>
             msg.id === aiMsgId
-              ? { ...msg, content: msg.content + chunk }
+              ? { ...msg, message: msg.message + chunk }
               : msg
           )
         );
@@ -246,33 +244,26 @@ export const useProblemFlow = (weekNumber: string) => {
 
       const { isCorrect, fullMessage } = await APIService.sendToAI(payload, handleChunk);
 
-      // Final message is already streamed, now just save it
-      const finalTimestamp = Date.now();
-
-      // Update the timestamp of the final message
+      const finalTimestamp = new Date();
       setChatHistory(prev =>
         prev.map(msg =>
-          msg.id === aiMsgId ? { ...msg, timestamp: finalTimestamp } : msg
+          msg.id === aiMsgId ? { ...msg, time_sent: finalTimestamp.toISOString() } : msg
         )
       );
 
-      // Save final AI message to database
       await SessionService.saveMessage(
-        currentSession, // Use the parameter here as well
+        currentSession,
         parseInt(weekNumber),
         problemIndex,
         subproblemIndex,
         'ai',
         fullMessage,
-        finalTimestamp
+        finalTimestamp.getTime() // Pass timestamp as a number
       );
 
       return { isCorrect };
     } catch (error) {
       console.error('Error in AI request:', error);
-      
-      // The error message is already handled by the onChunk in APIService
-      // We can just return here
       return { isCorrect: false };
     }
   };
@@ -282,8 +273,10 @@ export const useProblemFlow = (weekNumber: string) => {
     chatHistory,
     problemState,
     handleUserResponse,
-    weekContent,
     currentRunId: sessionData?.runId || '',
     currentUserId: sessionData?.userId || '',
+    currentProblemText: currentContent?.problem_text || '',
+    currentSubProblemText: currentContent?.subproblem_text || '',
+    currentSubProblemSolutionText: currentContent?.subproblem_solution|| '', 
   };
 };

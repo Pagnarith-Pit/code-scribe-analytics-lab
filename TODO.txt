@@ -10,7 +10,6 @@ Features
 
 Today- Feature Testing
 
-1) Responses stream from AI
 2) When a student hasn't reset the module, it should just load the entire completed module
 2) When hint button is pressed, it progresses through 3 levels. The hint persists and resets after new sub problem
 3) Hint timer is counted for each sub problem and each levels
