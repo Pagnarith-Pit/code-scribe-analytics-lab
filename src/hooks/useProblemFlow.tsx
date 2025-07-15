@@ -226,25 +226,34 @@ export const useProblemFlow = (weekNumber: string) => {
     const placeholderMessage: Message = {
       id: aiMsgId,
       type: 'ai',
-      content: '...',
+      content: '', // Start with empty content
       timestamp: Date.now(),
     };
 
     setChatHistory(prev => [...prev, placeholderMessage]);
 
     try {
-      const { isCorrect, fullMessage } = await APIService.sendToAI(payload);
-
-      // Update the placeholder message with the final content
-      const finalMessage: Message = {
-        id: aiMsgId,
-        type: 'ai',
-        content: fullMessage,
-        timestamp: Date.now(),
+      // Define the callback to stream content into the message
+      const handleChunk = (chunk: string) => {
+        setChatHistory(prev =>
+          prev.map(msg =>
+            msg.id === aiMsgId
+              ? { ...msg, content: msg.content + chunk }
+              : msg
+          )
+        );
       };
 
-      setChatHistory(prev => 
-        prev.map(msg => msg.id === aiMsgId ? finalMessage : msg)
+      const { isCorrect, fullMessage } = await APIService.sendToAI(payload, handleChunk);
+
+      // Final message is already streamed, now just save it
+      const finalTimestamp = Date.now();
+
+      // Update the timestamp of the final message
+      setChatHistory(prev =>
+        prev.map(msg =>
+          msg.id === aiMsgId ? { ...msg, timestamp: finalTimestamp } : msg
+        )
       );
 
       // Save final AI message to database
@@ -255,22 +264,15 @@ export const useProblemFlow = (weekNumber: string) => {
         subproblemIndex,
         'ai',
         fullMessage,
-        finalMessage.timestamp
+        finalTimestamp
       );
 
       return { isCorrect };
     } catch (error) {
       console.error('Error in AI request:', error);
       
-      // Update with error message
-      setChatHistory(prev => 
-        prev.map(msg => 
-          msg.id === aiMsgId 
-            ? { ...msg, content: 'Sorry, there was an error communicating with the AI tutor.' }
-            : msg
-        )
-      );
-
+      // The error message is already handled by the onChunk in APIService
+      // We can just return here
       return { isCorrect: false };
     }
   };

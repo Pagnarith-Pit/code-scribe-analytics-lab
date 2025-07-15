@@ -534,7 +534,10 @@ export class APIService {
     }
   }
 
-  static async sendToAI(payload: any): Promise<{ isCorrect: boolean; fullMessage: string }> {
+  static async sendToAI(
+    payload: any,
+    onChunk: (chunk: string) => void
+  ): Promise<{ isCorrect: boolean; fullMessage: string }> {
     try {
       const response = await fetch('http://localhost:5001/api/ai', {
         method: 'POST',
@@ -572,6 +575,7 @@ export class APIService {
 
             if (parsed.chunk) {
               fullMessage += parsed.chunk;
+              onChunk(parsed.chunk);
             }
           } catch (e) {
             console.error('Error parsing streamed chunk:', data);
@@ -582,6 +586,7 @@ export class APIService {
       return { isCorrect: validationResult.isCorrect, fullMessage };
     } catch (error) {
       console.error('Error in AI request:', error);
+      onChunk('Sorry, there was an error communicating with the AI tutor.');
       return { isCorrect: false, fullMessage: 'Error communicating with AI tutor.' };
     }
   }

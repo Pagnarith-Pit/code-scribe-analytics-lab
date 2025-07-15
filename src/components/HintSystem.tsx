@@ -60,7 +60,7 @@ export const HintSystem = ({
             <div className="mb-4">
               <h3 className="text-xl font-bold">Here's a push:</h3>
               <div className="text-sm text-gray-500 mt-1">
-                Problem {problemIndex + 1}.{subproblemIndex + 1}
+                Problem {problemIndex}.{subproblemIndex}
               </div>
             </div>
             
