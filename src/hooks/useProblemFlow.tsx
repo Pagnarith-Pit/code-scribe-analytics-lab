@@ -30,7 +30,7 @@ export const useProblemFlow = (weekNumber: string) => {
   const [problemState, setProblemState] = useState<ProblemState>({
     currentProblemIndex: 1, // Start from problem 1
     currentSubproblemIndex: 1, // Start from subproblem 1
-    isComplete: false,
+    isComplete: false
   });
   
   // Session management
@@ -78,15 +78,14 @@ export const useProblemFlow = (weekNumber: string) => {
           );
 
           console.log('Initializing with content:', currentContent);
-          // WE ARE HERE NOW AT TESTING POINT
-          // THE ISSUE IS THAT THE BACKEND IS NOT RESPONDING TO THE INITIALIZATION REQUEST
+
           if (currentContent) {
-            await sendToAI({
+            sendToAI({
               action: 'initialize',
               problem: currentContent.problem_text,
               subproblem: currentContent.subproblem_text,
               chatHistory: [],
-            }, session.progress.current_problem, session.progress.current_subproblem);
+            }, session.progress.current_problem, session.progress.current_subproblem, session); // Pass the 'session' object here
           }
         }
 
@@ -138,7 +137,7 @@ export const useProblemFlow = (weekNumber: string) => {
       subproblem: currentContent.subproblem_text,
       currentState: problemState,
       chatHistory: updatedChatHistory,
-    }, problemState.currentProblemIndex, problemState.currentSubproblemIndex);
+    }, problemState.currentProblemIndex, problemState.currentSubproblemIndex, sessionData);
 
     if (aiResponse.isCorrect) {
       await moveToNextProblem();
@@ -211,16 +210,17 @@ export const useProblemFlow = (weekNumber: string) => {
         subproblem: nextContent.subproblem_text,
         currentState: nextState,
         chatHistory,
-      }, nextState.currentProblemIndex, nextState.currentSubproblemIndex);
+      }, nextState.currentProblemIndex, nextState.currentSubproblemIndex, sessionData);
     }
   };
 
   const sendToAI = async (
     payload: any, 
     problemIndex: number, 
-    subproblemIndex: number
+    subproblemIndex: number,
+    currentSession: SessionData | null // Add this parameter
   ): Promise<{ isCorrect: boolean }> => {
-    if (!sessionData) return { isCorrect: false };
+    if (!currentSession) return { isCorrect: false }; // Use the parameter here
 
     const aiMsgId = generateId();
     const placeholderMessage: Message = {
@@ -249,7 +249,7 @@ export const useProblemFlow = (weekNumber: string) => {
 
       // Save final AI message to database
       await SessionService.saveMessage(
-        sessionData,
+        currentSession, // Use the parameter here as well
         parseInt(weekNumber),
         problemIndex,
         subproblemIndex,

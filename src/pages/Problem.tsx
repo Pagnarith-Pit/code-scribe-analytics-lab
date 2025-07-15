@@ -131,7 +131,7 @@ print(greet("World"))
                 />
               )}
             </div>
-
+            
             <WeekTopics 
               weekNumber={weekNumber || '1'}
               messages={chatHistory.filter(msg => msg.type === 'ai')}

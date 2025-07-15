@@ -42,7 +42,7 @@ export const WeekTopics: React.FC<WeekTopicsProps> = ({
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-gray-800">Welcome to Week {weekNumber}!</h2>
         <div className="text-sm text-gray-500">
-          Problem {problemState.currentProblemIndex + 1}.{problemState.currentSubproblemIndex + 1}
+          Problem {problemState.currentProblemIndex}.{problemState.currentSubproblemIndex}
         </div>
       </div>
       

@@ -22,6 +22,8 @@ def generate_response(payload):
 
     # AI Intended Action
     action = payload.get('action', 'default')
+
+    print(action)
     response_text = ""
 
     if action == 'initialize':
