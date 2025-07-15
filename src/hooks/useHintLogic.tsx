@@ -117,23 +117,24 @@ export const useHintLogic = ({
         chatHistory,
         currentUserCode
       );
+
       setHintContent(newHint);
 
-      // Save hint usage when first opened
-      if (sessionStartTimeRef.current) {
-        const levelMap = { initial: 1, more_help: 2, solution: 3 };
-        const hintLogId = await HintService.saveHintUsage(
-          userId,
-          parseInt(weekNumber),
-          runId,
-          problemIndex,
-          subproblemIndex,
-          levelMap[level],
-          newHint,
-          new Date(sessionStartTimeRef.current)
-        );
-        setCurrentHintLogId(hintLogId);
-      }
+      // // Save hint usage when first opened
+      // if (sessionStartTimeRef.current) {
+      //   const levelMap = { initial: 1, more_help: 2, solution: 3 };
+      //   const hintLogId = await HintService.saveHintUsage(
+      //     userId,
+      //     parseInt(weekNumber),
+      //     runId,
+      //     problemIndex,
+      //     subproblemIndex,
+      //     levelMap[level],
+      //     newHint,
+      //     new Date(sessionStartTimeRef.current)
+      //   );
+      //   setCurrentHintLogId(hintLogId);
+      // }
 
     } catch (error) {
       console.error(error);

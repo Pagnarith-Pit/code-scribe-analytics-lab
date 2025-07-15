@@ -527,11 +527,15 @@ export class APIService {
         throw new Error('Failed to fetch hint');
       }
       
-      const hint = response['hint'];
-      return hint;
+      // Correctly parse the JSON body before accessing its properties
+      const data = await response.json();
+      // console.log here shows that data is properly retrieved
+      return data.hint;
 
     } catch (error) {
       console.error('Error fetching hint:', error);
+      // Return a default error message
+      return 'Sorry, there was an error fetching your hint.';
     }
   }
 
