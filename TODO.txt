@@ -10,7 +10,8 @@ Features
 
 Today- Feature Testing
 
+1) Students first come into module: timer starts. If they click off, timer stops. When they click back in, timer resumes.
+2) When student comes back to the module, the hint level is the same as previous one
 2) When a student hasn't reset the module, it should just load the entire completed module
-2) When hint button is pressed, it progresses through 3 levels. The hint persists and resets after new sub problem
 3) Hint timer is counted for each sub problem and each levels
 4) The hint timer is saved into database
