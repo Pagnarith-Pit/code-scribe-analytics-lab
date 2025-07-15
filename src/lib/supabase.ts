@@ -1,7 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 // import 'dotenv/config';
-const key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzUxODEwNDAwLCJleHAiOjE5MDk1NzY4MDB9.5_QrIVr2iwcM9a5zhKd8oFxczzkwOi2B4QuF1Ku2s8k";
-const url = "http://localhost:8000"
+const key = import.meta.env.VITE_ANON_KEY
+const url = import.meta.env.VITE_SUPABASE_PUBLIC_URL
 
 // Get environment variables - make sure these are set in your .env file
 const supabaseUrl = url  //process.env.SUPABASE_PUBLIC_URL

@@ -16,14 +16,14 @@ Today- Feature Testing
 3) Hint timer is counted for each sub problem and each levels
 4) The hint timer is saved into database
 
-Implement in steps:
--> sub question timing: saving each sub-question attempt. Timer resets at every sub problem
-    Testing: go to Module, start a sub problem, exit module, re-enters
-    
--> hint savings (no timing):
-    Testing: go to Module, use hints, go to next Problem, use hints, exit Module, re-enter Module
+Current Bugs:
+1) When I click out of problem / close tab, we get this error. Issue is the end time is null.
+- POST /api/track/end-subproblem HTTP/1.1" 415
 
--> hint statistics (timing, log hint statistics ):
-    Testing: console log each time, printing each one at each level
+2) The hint usage loading upon re-entry is still error
 
--> hint statistics resuming 
+3) The hint usage timing, upon exit page, is also null. Must be handled with api/track/end-problem
+
+4) hintusagelogs is logging multiple times. I only want it once. 
+
+5) Why does duration seconds have 36xxx infront of it?

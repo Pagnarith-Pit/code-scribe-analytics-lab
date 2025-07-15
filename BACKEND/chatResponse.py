@@ -2,7 +2,6 @@ import json
 import time
 def generate_response(payload):
     """Generator function to stream response chunks."""
-    print(payload)
     # Current Main Problem and Subproblem
     main_problem = payload.get('problem', 'default')
     sub_problem = payload.get('subproblem', 'default')

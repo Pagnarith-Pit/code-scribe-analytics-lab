@@ -80,11 +80,22 @@ export const useSubproblemTimer = ({
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (sessionIdRef.current) {
-        // IMPORTANT: You must create this API route in your project.
-        // It should receive the session_id and call TimeTrackingService.endSubproblemTimer.
+        // Get the backend URL from your Vite environment variables (.env file)
+        // Example: VITE_PYTHON_BACKEND_URL=http://localhost:5001
+        const backendUrl = import.meta.env.VITE_PYTHON_BACKEND_URL;
+
+        if (!backendUrl) {
+          console.error("Backend URL is not configured.");
+          return;
+        }
+
+        const endpoint = `${backendUrl}/api/track/end-subproblem`;
         const data = JSON.stringify({ session_id: sessionIdRef.current });
-        navigator.sendBeacon('/api/track/end-subproblem', data);
-        console.log(`⏱️ Beacon sent to end subproblem session: ${sessionIdRef.current}`);
+        
+        console.log(`Sending beacon to ${endpoint} with data:`, data);
+        // Use a Blob to set the correct Content-Type for the beacon request
+        const blob = new Blob([data], { type: 'application/json' });
+        navigator.sendBeacon(endpoint, blob);
       }
     };
 
