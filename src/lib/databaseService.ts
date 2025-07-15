@@ -403,7 +403,7 @@ export class TimeTrackingService {
       throw new Error('Subproblem session not found.');
     }
 
-    const startTime = new Date(log.start_time);
+    const startTime = new Date(log.start_time.endsWith('Z') ? log.start_time : log.start_time + 'Z');
     const endTime = new Date();
     const duration = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
 
@@ -463,7 +463,7 @@ export class TimeTrackingService {
       throw new Error('Hint read session not found.');
     }
 
-    const startTime = new Date(log.start_time);
+    const startTime = new Date(log.start_time.endsWith('Z') ? log.start_time : log.start_time + 'Z');
     const endTime = new Date();
     const duration = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
 
