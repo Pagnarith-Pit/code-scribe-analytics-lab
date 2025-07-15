@@ -1,7 +1,13 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { HintService, APIService, HintUsageLog, ChatLog } from '@/lib/databaseService';
+import {
+  HintService,
+  APIService,
+  TimeTrackingService,
+  HintUsageLog,
+  ChatLog
+} from '@/lib/databaseService';
 
-export type HintLevel = 'initial' | 'more_help' | 'solution';
+export type HintLevelString = 'initial' | 'more_help' | 'solution';
 
 interface UseHintLogicProps {
   weekNumber: string;
@@ -11,16 +17,22 @@ interface UseHintLogicProps {
   runId: string;
   problemText: string;
   subProblemText: string;
-  subProblemSolutionText: string; // Optional for solution hints
+  subProblemSolutionText: string;
   chatHistory: ChatLog[];
   currentUserCode: string;
 }
 
-export const useHintLogic = ({ 
-  weekNumber, 
-  problemIndex, 
-  subproblemIndex, 
-  userId, 
+const mapLevelToString = (level: number): HintLevelString => {
+  if (level === 1) return 'initial';
+  if (level === 2) return 'more_help';
+  return 'solution';
+};
+
+export const useHintLogic = ({
+  weekNumber,
+  problemIndex,
+  subproblemIndex,
+  userId,
   runId,
   problemText,
   subProblemText,
@@ -31,16 +43,11 @@ export const useHintLogic = ({
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hintContent, setHintContent] = useState('');
-  const [hintLevel, setHintLevel] = useState<HintLevel>('initial');
-  
-  // Track current hint session
-  const [currentHintLogId, setCurrentHintLogId] = useState<string | null>(null);
-  const sessionStartTimeRef = useRef<number | null>(null);
-  
-  // State for existing hint usage in this session
+  const [hintLevel, setHintLevel] = useState<number>(1);
+  const [currentReadSessionId, setCurrentReadSessionId] = useState<string | null>(null);
   const [existingHintUsage, setExistingHintUsage] = useState<HintUsageLog[]>([]);
 
-  // Load existing hint usage for this problem/subproblem
+  // Load existing hint requests when component mounts or identity changes
   useEffect(() => {
     const loadExistingHints = async () => {
       if (!userId || !runId) return;
@@ -55,15 +62,14 @@ export const useHintLogic = ({
         );
 
         setExistingHintUsage(hintUsage);
-        
-        // Determine current hint level based on existing usage
         const currentLevel = HintService.determineCurrentHintLevel(hintUsage);
         setHintLevel(currentLevel);
-        
-        // Set the content of the last hint used
+
         const lastHintContent = HintService.getLastHintContent(hintUsage);
         if (lastHintContent) {
           setHintContent(lastHintContent);
+        } else {
+          setHintContent(''); // Reset if no prior hints
         }
       } catch (error) {
         console.error('Error loading existing hints:', error);
@@ -73,43 +79,20 @@ export const useHintLogic = ({
     loadExistingHints();
   }, [userId, runId, weekNumber, problemIndex, subproblemIndex]);
 
-  // Handle popup open/close timing
-  useEffect(() => {
-    if (isPopupOpen && !sessionStartTimeRef.current) {
-      sessionStartTimeRef.current = Date.now();
-    } else if (!isPopupOpen && sessionStartTimeRef.current && currentHintLogId) {
-      // Update the current hint log with closing time
-      const closeTime = new Date();
-      const openTime = new Date(sessionStartTimeRef.current);
-      
-      HintService.updateHintUsage(currentHintLogId, closeTime, openTime)
-        .catch(error => console.error('Error updating hint usage:', error));
-      
-      sessionStartTimeRef.current = null;
-      setCurrentHintLogId(null);
-    }
-  }, [isPopupOpen, currentHintLogId]);
-
   const getButtonConfig = () => {
-    switch (hintLevel) {
-      case 'initial':
-        return { text: 'Need More Help?', nextLevel: 'more_help' as HintLevel };
-      case 'more_help':
-        return { text: 'Need The Solution?', nextLevel: 'solution' as HintLevel };
-      case 'solution':
-        return { text: 'Solution Provided', nextLevel: null };
-      default:
-        return { text: '', nextLevel: null };
-    }
+    if (hintLevel === 1) return { text: 'Need More Help?', nextLevel: 2 };
+    if (hintLevel === 2) return { text: 'Need The Solution?', nextLevel: 3 };
+    return { text: 'Solution Provided', nextLevel: null };
   };
 
-  const handleRequestHint = useCallback(async (level: HintLevel) => {
+  const handleRequestHint = useCallback(async (level: number) => {
     setIsLoading(true);
     try {
+      const levelString = mapLevelToString(level);
       const newHint = await APIService.fetchHintFromAPI(
-        level, 
-        weekNumber, 
-        problemIndex, 
+        levelString,
+        weekNumber,
+        problemIndex,
         subproblemIndex,
         problemText,
         subProblemText,
@@ -120,6 +103,20 @@ export const useHintLogic = ({
 
       setHintContent(newHint);
 
+      // Save the fact that this hint was requested
+      await HintService.saveHintRequest(
+        userId,
+        parseInt(weekNumber),
+        runId,
+        problemIndex,
+        subproblemIndex,
+        level,
+        newHint
+      );
+      
+      // Add to our local cache of used hints
+      setExistingHintUsage(prev => [...prev, { hint_level: level, hint_provided: newHint } as HintUsageLog]);
+
     } catch (error) {
       console.error(error);
       setHintContent('Sorry, an error occurred while fetching your hint.');
@@ -128,47 +125,73 @@ export const useHintLogic = ({
     }
   }, [weekNumber, problemIndex, subproblemIndex, userId, runId, problemText, subProblemText, chatHistory, currentUserCode]);
 
-  const openPopup = () => {
+  const openPopup = async () => {
     setIsPopupOpen(true);
-    
     // If this is the first time opening and no content exists, fetch initial hint
-    if (hintLevel === 'initial' && !hintContent) {
-      handleRequestHint('initial');
+    if (hintLevel === 1 && !hintContent) {
+      await handleRequestHint(1);
+    }
+    
+    // Start a new read session every time popup is opened
+    try {
+      const sessionId = await TimeTrackingService.startHintReadTimer(
+        userId,
+        parseInt(weekNumber),
+        runId,
+        problemIndex,
+        subproblemIndex,
+        hintLevel
+      );
+      setCurrentReadSessionId(sessionId);
+      console.log(`📖 Started hint read session: ${sessionId}`);
+    } catch (error) {
+      console.error("Failed to start hint read timer", error);
     }
   };
 
-  const closePopup = () => {
+  const closePopup = async () => {
     setIsPopupOpen(false);
+    if (currentReadSessionId) {
+      try {
+        await TimeTrackingService.endHintReadTimer(currentReadSessionId);
+        console.log(`📕 Ended hint read session: ${currentReadSessionId}`);
+      } catch (error) {
+        console.error("Failed to end hint read timer", error);
+      }
+      setCurrentReadSessionId(null);
+    }
   };
 
-  const handleNextHint = () => {
+  const handleNextHint = async () => {
     const { nextLevel } = getButtonConfig();
     if (nextLevel) {
-      // Close current hint session if active
-      if (currentHintLogId && sessionStartTimeRef.current) {
-        const closeTime = new Date();
-        const openTime = new Date(sessionStartTimeRef.current);
-        HintService.updateHintUsage(currentHintLogId, closeTime, openTime)
-          .catch(error => console.error('Error updating hint usage:', error));
+      // End the current reading session before fetching the next hint
+      if (currentReadSessionId) {
+        await TimeTrackingService.endHintReadTimer(currentReadSessionId);
+        console.log(`📕 Ended hint read session for next hint: ${currentReadSessionId}`);
+        setCurrentReadSessionId(null); // Reset immediately
       }
 
-      // Reset timing for next hint level
-      sessionStartTimeRef.current = Date.now();
-      setCurrentHintLogId(null);
-      
       setHintLevel(nextLevel);
-      handleRequestHint(nextLevel);
+      await handleRequestHint(nextLevel);
+
+      // After fetching, immediately start a new read session for the new hint
+      try {
+        const newSessionId = await TimeTrackingService.startHintReadTimer(
+          userId,
+          parseInt(weekNumber),
+          runId,
+          problemIndex,
+          subproblemIndex,
+          nextLevel
+        );
+        setCurrentReadSessionId(newSessionId);
+        console.log(`📖 Started new hint read session: ${newSessionId}`);
+      } catch (error) {
+        console.error("Failed to start new hint read timer", error);
+      }
     }
   };
-
-  // Reset hint state when problem/subproblem changes
-  useEffect(() => {
-    setHintLevel('initial');
-    setHintContent('');
-    setCurrentHintLogId(null);
-    sessionStartTimeRef.current = null;
-    setIsPopupOpen(false);
-  }, [problemIndex, subproblemIndex]);
 
   return {
     isPopupOpen,
@@ -178,6 +201,5 @@ export const useHintLogic = ({
     openPopup,
     closePopup,
     handleNextHint,
-    existingHintUsage, // Expose for analytics if needed
   };
 };

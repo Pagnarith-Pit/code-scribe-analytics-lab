@@ -5,6 +5,7 @@ import { usePyodide } from '@/hooks/usePyodide';
 import { WeekTopics } from '@/components/WeekTopics';
 import { ChatDisplay } from '@/components/ChatDisplay';
 import { useProblemFlow } from '@/hooks/useProblemFlow';
+import { useSubproblemTimer } from '@/hooks/useSubproblemTimer';
 import { Link } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { HintSystem } from '@/components/HintSystem';
@@ -40,6 +41,16 @@ print(greet("World"))
     currentSubProblemText,
     currentSubProblemSolutionText
   } = useProblemFlow(weekNumber || '1');
+
+  // Add subproblem time tracking
+  const { isTracking } = useSubproblemTimer({
+    userId: currentUserId,
+    moduleNumber: parseInt(weekNumber || '1'),
+    runId: currentRunId,
+    problemIndex: problemState.currentProblemIndex,
+    subproblemIndex: problemState.currentSubproblemIndex,
+    enabled: !problemState.isComplete && !!currentUserId && !!currentRunId
+  });
 
   const handleCodeChange = (code: string) => {
     setCurrentCode(code);
@@ -118,9 +129,19 @@ print(greet("World"))
         >
           <div className="flex-1 min-h-0">
             <div className="p-4 flex justify-between items-center">
-              <Link to="/module" className="text-black font-bold py-2 px-4 transition-colors">
-                &larr; Back to Modules
-              </Link> 
+              <div className="flex items-center gap-4">
+                <Link to="/module" className="text-black font-bold py-2 px-4 transition-colors">
+                  &larr; Back to Modules
+                </Link>
+                
+                {/* Show tracking indicator */}
+                {isTracking && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span>Time tracking active</span>
+                  </div>
+                )}
+              </div>
               
               {/* Only render HintSystem when we have the required session data */}
               {currentUserId && currentRunId && (

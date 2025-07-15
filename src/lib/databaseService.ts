@@ -45,8 +45,30 @@ export interface HintUsageLog {
   subproblem_index: number;
   hint_level: number;
   hint_provided: string;
-  time_opened: string;
-  time_closed?: string;
+}
+
+export interface SubproblemTimeLog {
+  id: string;
+  user_id: string;
+  module_number: number;
+  run_id: string;
+  problem_index: number;
+  subproblem_index: number;
+  start_time: string;
+  end_time?: string;
+  duration_seconds?: number;
+}
+
+export interface HintReadLog {
+  id: string;
+  user_id: string;
+  module_number: number;
+  run_id: string;
+  problem_index: number;
+  subproblem_index: number;
+  hint_level: number;
+  start_time: string;
+  end_time?: string;
   duration_seconds?: number;
 }
 
@@ -287,7 +309,7 @@ export class HintService {
       .eq('run_id', runId)
       .eq('problem_index', problemIndex)
       .eq('subproblem_index', subproblemIndex)
-      .order('time_opened', { ascending: true });
+      .order('created_at', { ascending: true });
 
     if (error) {
       console.error('Error loading hint usage:', error);
@@ -297,91 +319,169 @@ export class HintService {
     return data || [];
   }
 
-  static async saveHintUsage(
+  static async saveHintRequest(
     userId: string,
     moduleNumber: number,
     runId: string,
     problemIndex: number,
     subproblemIndex: number,
     hintLevel: number,
-    hintText: string,
-    timeOpened: Date,
-    timeClosed?: Date
-  ): Promise<string> {
-    const durationSeconds = timeClosed 
-      ? Math.round((timeClosed.getTime() - timeOpened.getTime()) / 1000) 
-      : null;
-
+    hintText: string
+  ): Promise<void> {
     const hintLog: Partial<HintUsageLog> = {
-      id: crypto.randomUUID(),
       user_id: userId,
       module_number: moduleNumber,
       run_id: runId,
       problem_index: problemIndex,
       subproblem_index: subproblemIndex,
       hint_level: hintLevel,
-      hint_provided: hintText,
-      time_opened: timeOpened.toISOString(),
-      time_closed: timeClosed?.toISOString(),
-      duration_seconds: durationSeconds,
+      hint_provided: hintText
     };
 
-    const { data, error } = await supabase
-      .from('hintusagelogs')
-      .insert([hintLog])
-      .select()
-      .single();
+    const { error } = await supabase.from('hintusagelogs').insert([hintLog]);
 
     if (error) {
-      console.error('Error saving hint usage:', error);
+      console.error('Error saving hint request:', error);
       throw error;
     }
 
-    console.log(`💡 Hint usage saved: Level ${hintLevel} for ${durationSeconds}s`);
-    return data.id;
+    console.log(`💡 Hint request saved: Level ${hintLevel}`);
   }
 
-  static async updateHintUsage(
-    hintLogId: string,
-    timeClosed: Date,
-    timeOpened: Date
-  ): Promise<void> {
-    const durationSeconds = Math.round((timeClosed.getTime() - timeOpened.getTime()) / 1000);
-
-    const { error } = await supabase
-      .from('hintusagelogs')
-      .update({
-        time_closed: timeClosed.toISOString(),
-        duration_seconds: durationSeconds,
-      })
-      .eq('id', hintLogId);
-
-    if (error) {
-      console.error('Error updating hint usage:', error);
-      throw error;
-    }
-
-    console.log(`💡 Hint usage updated: ${durationSeconds}s duration`);
-  }
-
-  static determineCurrentHintLevel(hintUsage: HintUsageLog[]): 'initial' | 'more_help' | 'solution' {
-    if (hintUsage.length === 0) return 'initial';
-    
-    const maxLevel = Math.max(...hintUsage.map(h => h.hint_level));
-    const levelMap: { [key: number]: 'initial' | 'more_help' | 'solution' } = {
-      1: 'initial',
-      2: 'more_help',
-      3: 'solution'
-    };
-    
-    return levelMap[maxLevel] || 'initial';
+  static determineCurrentHintLevel(hintUsage: HintUsageLog[]): number {
+    if (hintUsage.length === 0) return 1; // Start with level 1
+    return Math.max(...hintUsage.map(h => h.hint_level)) + 1;
   }
 
   static getLastHintContent(hintUsage: HintUsageLog[]): string {
     if (hintUsage.length === 0) return '';
-    return hintUsage[hintUsage.length - 1].hint_provided;
+    // Sort by hint_level to get the latest hint
+    const sortedHints = [...hintUsage].sort((a, b) => b.hint_level - a.hint_level);
+    return sortedHints[0].hint_provided;
   }
 }
+
+// ===== TIME TRACKING SERVICE =====
+export class TimeTrackingService {
+  // Subproblem time tracking
+  static async startSubproblemTimer(
+    userId: string,
+    moduleNumber: number,
+    runId: string,
+    problemIndex: number,
+    subproblemIndex: number
+  ): Promise<string> {
+    const { data, error } = await supabase
+      .from('subproblem_time_logs')
+      .insert({
+        user_id: userId,
+        module_number: moduleNumber,
+        run_id: runId,
+        problem_index: problemIndex,
+        subproblem_index: subproblemIndex,
+        start_time: new Date().toISOString()
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Error starting subproblem timer:', error);
+      throw error;
+    }
+    return data.id;
+  }
+
+  static async endSubproblemTimer(sessionId: string): Promise<void> {
+    const { data: log, error: fetchError } = await supabase
+      .from('subproblem_time_logs')
+      .select('start_time')
+      .eq('id', sessionId)
+      .single();
+
+    if (fetchError || !log) {
+      console.error('Error fetching subproblem session for ending:', fetchError);
+      throw new Error('Subproblem session not found.');
+    }
+
+    const startTime = new Date(log.start_time);
+    const endTime = new Date();
+    const duration = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
+
+    const { error: updateError } = await supabase
+      .from('subproblem_time_logs')
+      .update({
+        end_time: endTime.toISOString(),
+        duration_seconds: duration
+      })
+      .eq('id', sessionId);
+
+    if (updateError) {
+      console.error('Error ending subproblem timer:', updateError);
+      throw updateError;
+    }
+  }
+
+  // Hint read time tracking
+  static async startHintReadTimer(
+    userId: string,
+    moduleNumber: number,
+    runId: string,
+    problemIndex: number,
+    subproblemIndex: number,
+    hintLevel: number
+  ): Promise<string> {
+    const { data, error } = await supabase
+      .from('hint_read_logs')
+      .insert({
+        user_id: userId,
+        module_number: moduleNumber,
+        run_id: runId,
+        problem_index: problemIndex,
+        subproblem_index: subproblemIndex,
+        hint_level: hintLevel,
+        start_time: new Date().toISOString()
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Error starting hint read timer:', error);
+      throw error;
+    }
+    return data.id;
+  }
+
+  static async endHintReadTimer(sessionId: string): Promise<void> {
+    const { data: log, error: fetchError } = await supabase
+      .from('hint_read_logs')
+      .select('start_time')
+      .eq('id', sessionId)
+      .single();
+
+    if (fetchError || !log) {
+      console.error('Error fetching hint read session for ending:', fetchError);
+      throw new Error('Hint read session not found.');
+    }
+
+    const startTime = new Date(log.start_time);
+    const endTime = new Date();
+    const duration = Math.round((endTime.getTime() - startTime.getTime()) / 1000);
+
+    const { error: updateError } = await supabase
+      .from('hint_read_logs')
+      .update({
+        end_time: endTime.toISOString(),
+        duration_seconds: duration
+      })
+      .eq('id', sessionId);
+
+    if (updateError) {
+      console.error('Error ending hint read timer:', updateError);
+      throw updateError;
+    }
+  }
+}
+
 
 // ===== ANALYTICS SERVICE =====
 export class AnalyticsService {
