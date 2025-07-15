@@ -172,7 +172,7 @@ export const useProblemFlow = (weekNumber: string) => {
       const completionMsg: Message = {
         id: generateId(),
         type: 'ai',
-        content: '🎉 You completed all problems for this week!',
+        content: 'Well Done! You have completed all problems for this week. Keep up the great work!',
         timestamp: Date.now(),
       };
       

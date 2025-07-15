@@ -33,7 +33,7 @@ def generate_response(payload):
         # In a real scenario, you might stream the reasoning before the final verdict.
         # For this simulation, we'll stream the message
         is_correct = len(latest_response) > 10
-        message = "Great job! That's correct. Let's move to the next problem." if is_correct \
+        message = "Great job! That's correct." if is_correct \
                   else "That's not quite right. Let me give you a hint: Think about the problem from a different angle."
         
         # We need to send the isCorrect status along with the message.

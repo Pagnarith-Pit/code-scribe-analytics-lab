@@ -5,8 +5,13 @@ Change the Module Description
 Features
 1) Connect to AI for answering
 2) Connect to AI for hints
-2) Saving students analytics 
+2) Saving students analytics
+3) Reset Module Button -> Complete current module first, then allow for reset
 
-Today
-1) Redesign Database Schema
-2) Implementing Loading System
+Today- Feature Testing
+
+1) Responses stream from AI
+2) When a student hasn't reset the module, it should just load the entire completed module
+2) When hint button is pressed, it progresses through 3 levels. The hint persists and resets after new sub problem
+3) Hint timer is counted for each sub problem and each levels
+4) The hint timer is saved into database
