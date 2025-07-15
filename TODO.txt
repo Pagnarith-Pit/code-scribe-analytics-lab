@@ -15,3 +15,15 @@ Today- Feature Testing
 2) When a student hasn't reset the module, it should just load the entire completed module
 3) Hint timer is counted for each sub problem and each levels
 4) The hint timer is saved into database
+
+Implement in steps:
+-> sub question timing: saving each sub-question attempt. Timer resets at every sub problem
+    Testing: go to Module, start a sub problem, exit module, re-enters
+    
+-> hint savings (no timing):
+    Testing: go to Module, use hints, go to next Problem, use hints, exit Module, re-enter Module
+
+-> hint statistics (timing, log hint statistics ):
+    Testing: console log each time, printing each one at each level
+
+-> hint statistics resuming 
