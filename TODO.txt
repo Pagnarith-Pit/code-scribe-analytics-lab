@@ -2,26 +2,16 @@ Include Participant Consent Form
 Protect Module Route before login
 Change the Module Description
 
-Features
+APIs
 1) Connect to AI for answering
 2) Connect to AI for hints
-2) Saving students analytics
-3) Reset Module Button -> Complete current module first, then allow for reset
+
 
 Today- Feature Testing
-
-1) Students first come into module: timer starts. If they click off, timer stops. When they click back in, timer resumes.
-2) When student comes back to the module, the hint level is the same as previous one
-2) When a student hasn't reset the module, it should just load the entire completed module
-3) Hint timer is counted for each sub problem and each levels
-4) The hint timer is saved into database
+1) Reset Module Button -> Complete current module first, then allow for reset
+2) If Module complete but hasn't resetted, then load complete chatlogs there
 
 Current Bugs:
-1) When I click out of problem / close tab, we get this error. Issue is the end time is null.
-- POST /api/track/end-subproblem HTTP/1.1" 415
 
-2) The hint usage loading upon re-entry is still error
-
-3) The hint usage timing, upon exit page, is also null. Must be handled with api/track/end-problem
-
-4) hintusagelogs is logging multiple times. I only want it once. 
+1) The timing can still show NULL for subproblem_time_logs
+2) Implement the same logic for unloading for hint usage

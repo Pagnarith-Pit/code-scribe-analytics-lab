@@ -61,6 +61,8 @@ export const useHintLogic = ({
           subproblemIndex
         );
 
+        console.log("Hint Usage Loaded:", hintUsage);
+
         setExistingHintUsage(hintUsage);
         const currentLevel = HintService.determineCurrentHintLevel(hintUsage);
         setHintLevel(currentLevel);

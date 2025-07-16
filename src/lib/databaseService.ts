@@ -301,6 +301,7 @@ export class HintService {
     problemIndex: number,
     subproblemIndex: number
   ): Promise<HintUsageLog[]> {
+    
     const { data, error } = await supabase
       .from('hintusagelogs')
       .select('*')
@@ -309,12 +310,13 @@ export class HintService {
       .eq('run_id', runId)
       .eq('problem_index', problemIndex)
       .eq('subproblem_index', subproblemIndex)
-      .order('created_at', { ascending: true });
 
     if (error) {
       console.error('Error loading hint usage:', error);
       throw error;
     }
+
+    console.log(`Loaded data:`, data);
 
     return data || [];
   }
@@ -349,8 +351,9 @@ export class HintService {
   }
 
   static determineCurrentHintLevel(hintUsage: HintUsageLog[]): number {
+    console.log(`Determining current hint level from usage logs:`, hintUsage);
     if (hintUsage.length === 0) return 1; // Start with level 1
-    return Math.max(...hintUsage.map(h => h.hint_level)) + 1;
+    return Math.max(...hintUsage.map(h => h.hint_level));
   }
 
   static getLastHintContent(hintUsage: HintUsageLog[]): string {

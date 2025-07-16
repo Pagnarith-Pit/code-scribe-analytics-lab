@@ -30,21 +30,16 @@ def end_subproblem_route():
     This route receives the beacon request and passes it to the logic handler.
     """
     try:
-        print("✅ Received POST request to /api/track/end-subproblem")
-        print(f"📩 Headers: {dict(request.headers)}")
-
         data = request.get_json(force=True, silent=True)
         if not data or 'session_id' not in data:
             print("⚠️ Invalid data received:", data)
             return jsonify({'error': 'Invalid or missing session_id'}), 400
 
-        print(f"🔍 Ending session: {data['session_id']}")
         response_data, status_code = end_subproblem_timer_logic(data)
 
         return jsonify(response_data), status_code
 
     except Exception as e:
-        print("❌ Exception occurred while ending subproblem timer:", str(e))
         return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
