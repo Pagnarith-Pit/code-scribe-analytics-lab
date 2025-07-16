@@ -20,6 +20,7 @@ export const useSubproblemTimer = ({
 }: UseSubproblemTimerProps) => {
   const [isTracking, setIsTracking] = useState(false);
   const sessionIdRef = useRef<string | null>(null);
+  const sentBeaconRef = useRef(false);
 
   // Start new session when subproblem changes or component mounts
   useEffect(() => {
@@ -76,32 +77,39 @@ export const useSubproblemTimer = ({
     };
   }, [userId, runId, moduleNumber, problemIndex, subproblemIndex, enabled]);
 
-  // Handle page unload
+  // Handle page visibility change (e.g., tab switching, browser closing)
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (sessionIdRef.current) {
+    const handlePageHideOrVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && sessionIdRef.current) {
         // Get the backend URL from your Vite environment variables (.env file)
         // Example: VITE_PYTHON_BACKEND_URL=http://localhost:5001
+        sentBeaconRef.current = true;
         const backendUrl = import.meta.env.VITE_PYTHON_BACKEND_URL;
 
         if (!backendUrl) {
-          console.error("Backend URL is not configured.");
+          console.error('Backend URL is not configured.');
           return;
         }
 
         const endpoint = `${backendUrl}/api/track/end-subproblem`;
         const data = JSON.stringify({ session_id: sessionIdRef.current });
-        
-        console.log(`Sending beacon to ${endpoint} with data:`, data);
+
+        console.log(`Sending beacon due to visibility change to ${endpoint} with data:`, data);
         // Use a Blob to set the correct Content-Type for the beacon request
         const blob = new Blob([data], { type: 'application/json' });
         navigator.sendBeacon(endpoint, blob);
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, []); // This effect should only run once
+        // Add both listeners
+        document.addEventListener('visibilitychange', handlePageHideOrVisibilityChange);
+        window.addEventListener('pagehide', handlePageHideOrVisibilityChange);
+
+        // Cleanup both on unmount
+        return () => {
+          document.removeEventListener('visibilitychange', handlePageHideOrVisibilityChange);
+          window.removeEventListener('pagehide', handlePageHideOrVisibilityChange);}
+        }, []); // This effect should only run once
 
   return {
     isTracking

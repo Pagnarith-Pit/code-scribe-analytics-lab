@@ -25,5 +25,3 @@ Current Bugs:
 3) The hint usage timing, upon exit page, is also null. Must be handled with api/track/end-problem
 
 4) hintusagelogs is logging multiple times. I only want it once. 
-
-5) Why does duration seconds have 36xxx infront of it?
