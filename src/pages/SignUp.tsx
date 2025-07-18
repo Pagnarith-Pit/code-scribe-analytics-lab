@@ -83,8 +83,8 @@ const SignUp = () => {
         }
         return;
       }
-      // Check if email confirmation is required
-      navigate("/module");
+      // Redirect to confirmation page
+      navigate("/signup/confirmation");
       
     } catch (err: any) {
       setIsLoading(false);

@@ -9,6 +9,7 @@ import Problem from "./pages/Problem";
 import SignIn from "./pages/SignIn";
 import NotFound from "./pages/NotFound";
 import SignUp from "./pages/SignUp";
+import SignUpConfirmation from "./pages/SignUpConfirmation";
 import Module from "./pages/Module";
 import { AuthProvider } from "./contexts/AuthContext";
 
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/problem/:weekNumber" element={<Problem />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/signup/confirmation" element={<SignUpConfirmation />} />
             <Route path="/module" element={<Module />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
