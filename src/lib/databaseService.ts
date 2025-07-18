@@ -137,8 +137,7 @@ export class StudentProgressService {
     userId: string, 
     moduleNumber: number
   ): Promise<StudentProgress> {
-    // First, try to find existing incomplete progress
- 
+    // 1. First, try to find existing incomplete progress
     const { data: existingProgress, error: progressError } = await supabase
       .from('studentprogress')
       .select('*')
@@ -150,12 +149,27 @@ export class StudentProgressService {
       .single();
 
     if (existingProgress && !progressError) {
-      console.log('📚 Resuming existing session:', existingProgress.run_id);
+      console.log('📚 Resuming existing incomplete session:', existingProgress.run_id);
       return existingProgress;
     }
 
+    // 2. If no incomplete progress, check for completed progress to resume
+    const { data: completedProgress, error: completedError } = await supabase
+      .from('studentprogress')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('module_number', moduleNumber)
+      .eq('is_complete', true)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
 
-    // Create new session
+    if (completedProgress && !completedError) {
+      console.log('📚 Loading completed module for review:', completedProgress.run_id);
+      return completedProgress;
+    }
+
+    // 3. No existing progress found - create new session
     const newRunId = crypto.randomUUID();
     const newProgress: Partial<StudentProgress> = {
       id: crypto.randomUUID(),
@@ -169,7 +183,7 @@ export class StudentProgressService {
       updated_at: new Date().toISOString(),
     };
 
-    console.log(newProgress)
+    console.log('Creating new progress:', newProgress);
 
     const { data, error } = await supabase
       .from('studentprogress')
@@ -214,16 +228,35 @@ export class StudentProgressService {
     userId: string,
     moduleNumber: number
   ): Promise<StudentProgress> {
-    // Mark any existing incomplete progress as abandoned (optional)
-    await supabase
-      .from('studentprogress')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('user_id', userId)
-      .eq('module_number', moduleNumber)
-      .eq('is_complete', false);
+    console.log(`🔄 Resetting module ${moduleNumber} for user ${userId}`);
+    
+    // Create new session (this will not interfere with existing complete/incomplete sessions)
+    const newRunId = crypto.randomUUID();
+    const newProgress: Partial<StudentProgress> = {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      module_number: moduleNumber,
+      run_id: newRunId,
+      current_problem: 1,
+      current_subproblem: 1,
+      is_complete: false,
+      started_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
-    // Create new session
-    return this.initializeOrResumeProgress(userId, moduleNumber);
+    const { data, error } = await supabase
+      .from('studentprogress')
+      .insert([newProgress])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error resetting module progress:', error);
+      throw error;
+    }
+
+    console.log('🆕 Created fresh session for reset:', newRunId);
+    return data;
   }
 }
 
@@ -590,6 +623,30 @@ export class SessionService {
       subproblemIndex,
       isComplete
     );
+  }
+
+  static async restartModule(moduleNumber: number): Promise<SessionData> {
+    try {
+      // Get current user
+      const userId = await AuthService.getCurrentUser();
+
+      // Reset module progress (creates new incomplete session)
+      const progress = await StudentProgressService.resetModuleProgress(userId, moduleNumber);
+
+      // No existing chat history for a fresh restart
+      const chatLogs: ChatLog[] = [];
+
+      return {
+        userId,
+        runId: progress.run_id,
+        progressId: progress.id,
+        progress,
+        chatHistory: chatLogs,
+      };
+    } catch (error) {
+      console.error('Error restarting module:', error);
+      throw error;
+    }
   }
 }
 

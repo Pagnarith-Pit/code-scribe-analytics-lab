@@ -268,11 +268,49 @@ export const useProblemFlow = (weekNumber: string) => {
     }
   };
 
+  const handleRestartModule = useCallback(async () => {
+    try {
+      setLoading(true);
+      const newSession = await SessionService.restartModule(parseInt(weekNumber));
+      setSessionData(newSession);
+
+      // Reset to initial state
+      setProblemState({
+        currentProblemIndex: 1,
+        currentSubproblemIndex: 1,
+        isComplete: false
+      });
+
+      // Clear chat history for fresh start
+      setChatHistory([]);
+
+      // Trigger first AI message for the fresh session
+      const content = await WeekContentService.getWeekContent(parseInt(weekNumber));
+      if (content.length > 0) {
+        const firstContent = content.find(c => c.problem_index === 1 && c.subproblem_index === 1);
+        if (firstContent) {
+          await sendToAI({
+            action: 'initialize',
+            problem: firstContent.problem_text,
+            subproblem: firstContent.subproblem_text,
+            chatHistory: [],
+          }, 1, 1, newSession);
+        }
+      }
+    } catch (error) {
+      console.error('Error restarting module:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [weekNumber]);
+
   return {
     loading,
     chatHistory,
     problemState,
     handleUserResponse,
+    handleRestartModule,
     currentRunId: sessionData?.runId || '',
     currentUserId: sessionData?.userId || '',
     currentProblemText: currentContent?.problem_text || '',

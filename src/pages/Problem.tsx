@@ -9,6 +9,7 @@ import { useSubproblemTimer } from '@/hooks/useSubproblemTimer';
 import { Link } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import { HintSystem } from '@/components/HintSystem';
+import { RestartModuleButton } from '@/components/RestartModuleButton';
 
 const Problem = () => {
   const { weekNumber } = useParams();
@@ -35,6 +36,7 @@ print(greet("World"))
     chatHistory, 
     problemState, 
     handleUserResponse,
+    handleRestartModule,
     currentRunId,
     currentUserId,
     currentProblemText,
@@ -141,6 +143,13 @@ print(greet("World"))
                     <span>Time tracking active</span>
                   </div>
                 )}
+
+                {/* Restart Module Button - Only shows when module is complete */}
+                <RestartModuleButton
+                  isComplete={problemState.isComplete}
+                  onRestart={handleRestartModule}
+                  disabled={problemFlowLoading}
+                />
               </div>
               
               {/* Only render HintSystem when we have the required session data */}
